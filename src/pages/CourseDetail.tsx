@@ -4,7 +4,7 @@ import { Star, Clock, Users, BookOpen, Globe, ChevronDown, ChevronRight, Play, L
 import { Button } from '@/components/ui/button';
 import { StarRating } from '@/components/shared/CourseCard';
 import { useCourseStore } from '@/stores/courseStore';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -13,7 +13,7 @@ const CourseDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { courses, isEnrolled, enrollInCourse, getEnrollment, addReview } = useCourseStore();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, profile, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const course = courses.find(c => c.id === id);
   const [openSections, setOpenSections] = useState<string[]>([]);
@@ -22,22 +22,23 @@ const CourseDetail = () => {
 
   if (!course) return <div className="flex min-h-[60vh] items-center justify-center"><p>Course not found</p></div>;
 
-  const enrolled = user ? isEnrolled(user.id, course.id) : false;
-  const enrollment = user ? getEnrollment(user.id, course.id) : undefined;
+  const userId = user?.id;
+  const enrolled = userId ? isEnrolled(userId, course.id) : false;
+  const enrollment = userId ? getEnrollment(userId, course.id) : undefined;
 
   const toggleSection = (id: string) => setOpenSections(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
 
   const handleEnroll = () => {
-    if (!isAuthenticated) { navigate('/login'); return; }
-    enrollInCourse(user!.id, course.id);
+    if (!isAuthenticated || !userId) { navigate('/login'); return; }
+    enrollInCourse(userId, course.id);
     toast({ title: 'Enrolled!', description: `You have been enrolled in ${course.title}` });
   };
 
   const handleReview = () => {
     if (!reviewText.trim()) return;
     addReview({
-      id: `r-${Date.now()}`, courseId: course.id, studentId: user!.id,
-      studentName: user!.name, studentAvatar: user!.avatar,
+      id: `r-${Date.now()}`, courseId: course.id, studentId: userId!,
+      studentName: profile?.display_name || '', studentAvatar: profile?.avatar_url || '',
       rating: reviewRating, comment: reviewText, createdAt: new Date().toISOString(),
     });
     setReviewText('');

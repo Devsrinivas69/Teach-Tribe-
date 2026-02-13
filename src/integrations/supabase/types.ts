@@ -14,16 +14,227 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      courses: {
+        Row: {
+          category: string | null
+          created_at: string
+          curriculum: Json | null
+          description: string | null
+          enrollment_count: number | null
+          id: string
+          instructor_id: string
+          is_published: boolean | null
+          language: string | null
+          level: string | null
+          price: number | null
+          rating: number | null
+          requirements: string[] | null
+          review_count: number | null
+          short_description: string | null
+          thumbnail: string | null
+          title: string
+          total_duration: string | null
+          total_lessons: number | null
+          updated_at: string
+          what_you_learn: string[] | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          curriculum?: Json | null
+          description?: string | null
+          enrollment_count?: number | null
+          id?: string
+          instructor_id: string
+          is_published?: boolean | null
+          language?: string | null
+          level?: string | null
+          price?: number | null
+          rating?: number | null
+          requirements?: string[] | null
+          review_count?: number | null
+          short_description?: string | null
+          thumbnail?: string | null
+          title: string
+          total_duration?: string | null
+          total_lessons?: number | null
+          updated_at?: string
+          what_you_learn?: string[] | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          curriculum?: Json | null
+          description?: string | null
+          enrollment_count?: number | null
+          id?: string
+          instructor_id?: string
+          is_published?: boolean | null
+          language?: string | null
+          level?: string | null
+          price?: number | null
+          rating?: number | null
+          requirements?: string[] | null
+          review_count?: number | null
+          short_description?: string | null
+          thumbnail?: string | null
+          title?: string
+          total_duration?: string | null
+          total_lessons?: number | null
+          updated_at?: string
+          what_you_learn?: string[] | null
+        }
+        Relationships: []
+      }
+      enrollments: {
+        Row: {
+          completed_at: string | null
+          completed_lessons: string[] | null
+          course_id: string
+          enrolled_at: string
+          id: string
+          progress: number | null
+          student_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_lessons?: string[] | null
+          course_id: string
+          enrolled_at?: string
+          id?: string
+          progress?: number | null
+          student_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_lessons?: string[] | null
+          course_id?: string
+          enrolled_at?: string
+          id?: string
+          progress?: number | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          course_id: string
+          created_at: string
+          id: string
+          rating: number
+          student_avatar: string | null
+          student_id: string
+          student_name: string
+        }
+        Insert: {
+          comment?: string | null
+          course_id: string
+          created_at?: string
+          id?: string
+          rating: number
+          student_avatar?: string | null
+          student_id: string
+          student_name: string
+        }
+        Update: {
+          comment?: string | null
+          course_id?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          student_avatar?: string | null
+          student_id?: string
+          student_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "student" | "instructor" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +361,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["student", "instructor", "admin"],
+    },
   },
 } as const

@@ -3,13 +3,13 @@ import { motion } from 'framer-motion';
 import { BookOpen, Award, Clock, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { useCourseStore } from '@/stores/courseStore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, profile } = useAuth();
   const { courses, getStudentEnrollments } = useCourseStore();
 
   if (!user) { navigate('/login'); return null; }
@@ -30,7 +30,7 @@ const StudentDashboard = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold">Welcome back, {user.name}! 👋</h1>
+        <h1 className="text-2xl font-bold">Welcome back, {profile?.display_name}! 👋</h1>
         <p className="text-muted-foreground">Continue your learning journey</p>
       </motion.div>
 

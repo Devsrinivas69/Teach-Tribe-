@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, GripVertical, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { useCourseStore } from '@/stores/courseStore';
 import { categories } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
@@ -13,7 +13,7 @@ const steps = ['Basic Info', 'Curriculum', 'Pricing & Details', 'Review & Publis
 
 const CreateCourse = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, profile, role } = useAuth();
   const { addCourse } = useCourseStore();
   const { toast } = useToast();
   const [step, setStep] = useState(0);
@@ -31,7 +31,7 @@ const CreateCourse = () => {
     { title: 'Section 1', lessons: [{ title: '', videoUrl: '', duration: '' }] },
   ]);
 
-  if (!user || user.role === 'student') { navigate('/'); return null; }
+  if (!user || role === 'student') { navigate('/'); return null; }
 
   const addSection = () => setSections([...sections, { title: `Section ${sections.length + 1}`, lessons: [{ title: '', videoUrl: '', duration: '' }] }]);
   const addLesson = (si: number) => {
@@ -59,7 +59,7 @@ const CreateCourse = () => {
   const handlePublish = (isDraft: boolean) => {
     const newCourse: Course = {
       id: `c-${Date.now()}`, title, shortDescription: shortDesc, description,
-      instructor: user.id, instructorName: user.name, instructorAvatar: user.avatar,
+      instructor: user.id, instructorName: profile?.display_name || '', instructorAvatar: profile?.avatar_url || '',
       thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&h=400&fit=crop',
       price: isFree ? 0 : price, category, level, language: 'English',
       curriculum: sections.map((s, si) => ({

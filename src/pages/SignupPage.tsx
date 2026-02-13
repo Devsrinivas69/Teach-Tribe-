@@ -3,41 +3,32 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { GraduationCap, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import type { UserRole } from '@/types';
 
 const SignupPage = () => {
   const navigate = useNavigate();
-  const { signup } = useAuthStore();
+  const { signup } = useAuth();
   const { toast } = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('student');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 6) { toast({ title: 'Password must be at least 6 characters', variant: 'destructive' }); return; }
     setLoading(true);
-    setTimeout(() => {
-      const result = signup(name, email, password, role);
-      setLoading(false);
-      if (result.success) {
-        toast({ title: result.message });
-        navigate('/');
-      } else {
-        toast({ title: 'Error', description: result.message, variant: 'destructive' });
-      }
-    }, 500);
+    const result = await signup(name, email, password);
+    setLoading(false);
+    if (result.success) {
+      toast({ title: result.message });
+      navigate('/');
+    } else {
+      toast({ title: 'Error', description: result.message, variant: 'destructive' });
+    }
   };
-
-  const roles: { value: UserRole; label: string; desc: string }[] = [
-    { value: 'student', label: 'Student', desc: 'Learn new skills' },
-    { value: 'instructor', label: 'Instructor', desc: 'Create & teach courses' },
-  ];
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4">
@@ -71,18 +62,6 @@ const SignupPage = () => {
               <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                 {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium">I am a</label>
-            <div className="mt-2 grid grid-cols-2 gap-3">
-              {roles.map(r => (
-                <button key={r.value} type="button" onClick={() => setRole(r.value)}
-                  className={`rounded-lg border p-3 text-left transition-all ${role === r.value ? 'border-primary bg-primary/5 ring-2 ring-primary' : 'border-border hover:border-primary/30'}`}>
-                  <div className="text-sm font-medium">{r.label}</div>
-                  <div className="text-xs text-muted-foreground">{r.desc}</div>
-                </button>
-              ))}
             </div>
           </div>
           <Button type="submit" className="w-full bg-primary text-primary-foreground" disabled={loading}>

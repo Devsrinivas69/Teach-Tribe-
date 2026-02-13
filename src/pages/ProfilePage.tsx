@@ -3,20 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { user, updateProfile } = useAuthStore();
+  const { user, profile, role, updateProfile } = useAuth();
   const { toast } = useToast();
-  const [name, setName] = useState(user?.name || '');
-  const [bio, setBio] = useState(user?.bio || '');
+  const [name, setName] = useState(profile?.display_name || '');
+  const [bio, setBio] = useState(profile?.bio || '');
 
   if (!user) { navigate('/login'); return null; }
 
-  const handleSave = () => {
-    updateProfile({ name, bio });
+  const handleSave = async () => {
+    await updateProfile({ display_name: name, bio });
     toast({ title: 'Profile updated!' });
   };
 
@@ -27,14 +27,14 @@ const ProfilePage = () => {
         <div className="rounded-xl border border-border bg-card p-6 card-shadow">
           <div className="flex items-center gap-4 mb-6">
             <div className="relative">
-              <img src={user.avatar} alt={user.name} className="h-20 w-20 rounded-full object-cover ring-4 ring-primary/10" />
+              <img src={profile?.avatar_url || ''} alt={profile?.display_name} className="h-20 w-20 rounded-full object-cover ring-4 ring-primary/10" />
               <button className="absolute bottom-0 right-0 rounded-full bg-primary p-1.5 text-primary-foreground">
                 <Camera className="h-3 w-3" />
               </button>
             </div>
             <div>
-              <h2 className="text-lg font-bold">{user.name}</h2>
-              <p className="text-sm text-muted-foreground capitalize">{user.role}</p>
+              <h2 className="text-lg font-bold">{profile?.display_name}</h2>
+              <p className="text-sm text-muted-foreground capitalize">{role}</p>
             </div>
           </div>
           <div className="space-y-4">
@@ -45,7 +45,7 @@ const ProfilePage = () => {
             </div>
             <div>
               <label className="text-sm font-medium">Email</label>
-              <input value={user.email} disabled className="mt-1 w-full rounded-lg border border-input bg-muted px-3 py-2.5 text-sm text-muted-foreground" />
+              <input value={user.email || ''} disabled className="mt-1 w-full rounded-lg border border-input bg-muted px-3 py-2.5 text-sm text-muted-foreground" />
             </div>
             <div>
               <label className="text-sm font-medium">Bio</label>
