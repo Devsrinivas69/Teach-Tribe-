@@ -2,19 +2,18 @@ import { motion } from 'framer-motion';
 import { Users, BookOpen, DollarSign, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { useCourseStore } from '@/stores/courseStore';
-import { users } from '@/data/mockData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, role } = useAuth();
   const { courses, enrollments } = useCourseStore();
 
-  if (!user || user.role !== 'admin') { navigate('/'); return null; }
+  if (!user || role !== 'admin') { navigate('/'); return null; }
 
-  const totalUsers = users.length;
+  const totalUsers = 0; // Will be loaded from database later
   const totalRevenue = courses.reduce((a, c) => a + c.price * c.enrollmentCount, 0);
 
   const stats = [
@@ -60,23 +59,7 @@ const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {users.map(u => (
-                  <tr key={u.id} className="hover:bg-muted/30">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <img src={u.avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
-                        <span className="font-medium">{u.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell text-muted-foreground">{u.email}</td>
-                    <td className="px-4 py-3">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
-                        u.role === 'admin' ? 'bg-destructive/10 text-destructive' : u.role === 'instructor' ? 'bg-primary/10 text-primary' : 'bg-success/10 text-success'
-                      }`}>{u.role}</span>
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">{u.createdAt}</td>
-                  </tr>
-                ))}
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">User management coming soon</td></tr>
               </tbody>
             </table>
           </div>

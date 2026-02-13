@@ -2,12 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Users, DollarSign, BookOpen, Star, Plus, Edit, Trash2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { useCourseStore } from '@/stores/courseStore';
 
 const InstructorDashboard = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, profile } = useAuth();
   const { getInstructorCourses, enrollments } = useCourseStore();
 
   if (!user) { navigate('/login'); return null; }
@@ -29,7 +29,7 @@ const InstructorDashboard = () => {
       <div className="flex items-center justify-between">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl font-bold">Instructor Dashboard</h1>
-          <p className="text-muted-foreground">Welcome, {user.name}</p>
+          <p className="text-muted-foreground">Welcome, {profile?.display_name}</p>
         </motion.div>
         <Button onClick={() => navigate('/create-course')} className="gap-2 bg-primary text-primary-foreground">
           <Plus className="h-4 w-4" /> Create Course

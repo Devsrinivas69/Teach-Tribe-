@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, Play, CheckCircle2, Lock, ChevronLeft, ChevronRight as Next, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCourseStore } from '@/stores/courseStore';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 
@@ -11,7 +11,7 @@ const LearningPage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { courses, getEnrollment, completeLesson } = useCourseStore();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const course = courses.find(c => c.id === courseId);

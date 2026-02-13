@@ -3,31 +3,29 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { GraduationCap, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuthStore();
+  const { login } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      const result = login(email, password);
-      setLoading(false);
-      if (result.success) {
-        toast({ title: result.message });
-        navigate('/');
-      } else {
-        toast({ title: 'Error', description: result.message, variant: 'destructive' });
-      }
-    }, 500);
+    const result = await login(email, password);
+    setLoading(false);
+    if (result.success) {
+      toast({ title: result.message });
+      navigate('/');
+    } else {
+      toast({ title: 'Error', description: result.message, variant: 'destructive' });
+    }
   };
 
   return (
@@ -65,13 +63,6 @@ const LoginPage = () => {
 
         <div className="mt-4 text-center text-sm text-muted-foreground">
           Don't have an account? <Link to="/signup" className="font-medium text-primary hover:underline">Sign up</Link>
-        </div>
-
-        <div className="mt-4 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-          <p className="font-medium mb-1">Demo accounts:</p>
-          <p>Student: student@test.com / password123</p>
-          <p>Instructor: john@academia.com / password123</p>
-          <p>Admin: admin@test.com / password123</p>
         </div>
       </motion.div>
     </div>
