@@ -13,30 +13,36 @@ const CourseDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { courses, isEnrolled, enrollInCourse, getEnrollment, addReview } = useCourseStore();
-  const { user, profile, isAuthenticated } = useAuth();
+  const { user, profile, isAuthenticated, role, activeAdminId } = useAuth();
   const { toast } = useToast();
-  const course = courses.find(c => c.id === id);
+  const visibleCourses = courses.filter(c => {
+    if (!isAuthenticated) return true;
+    if (role === 'master_admin') return true;
+    if (!activeAdminId) return true;
+    return !c.adminId || c.adminId === activeAdminId;
+  });
+  const course = visibleCourses.find(c => c.id === id);
   const [openSections, setOpenSections] = useState<string[]>([]);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
 
   if (!course) return <div className="flex min-h-[60vh] items-center justify-center"><p>Course not found</p></div>;
 
-  const userId = user?.id;
+  const userId = user?.uid;
   const enrolled = userId ? isEnrolled(userId, course.id) : false;
   const enrollment = userId ? getEnrollment(userId, course.id) : undefined;
 
   const toggleSection = (id: string) => setOpenSections(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
 
-  const handleEnroll = () => {
+  const handleEnroll = async () => {
     if (!isAuthenticated || !userId) { navigate('/login'); return; }
-    enrollInCourse(userId, course.id);
+    await enrollInCourse(userId, course.id);
     toast({ title: 'Enrolled!', description: `You have been enrolled in ${course.title}` });
   };
 
-  const handleReview = () => {
+  const handleReview = async () => {
     if (!reviewText.trim()) return;
-    addReview({
+    await addReview({
       id: `r-${Date.now()}`, courseId: course.id, studentId: userId!,
       studentName: profile?.display_name || '', studentAvatar: profile?.avatar_url || '',
       rating: reviewRating, comment: reviewText, createdAt: new Date().toISOString(),
@@ -61,15 +67,15 @@ const CourseDetail = () => {
                 className="text-3xl font-bold text-primary-foreground md:text-4xl">{course.title}</motion.h1>
               <p className="mt-3 text-lg text-primary-foreground/80">{course.shortDescription}</p>
               <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-primary-foreground/80">
-                <span className="flex items-center gap-1"><Star className="h-4 w-4 fill-warning text-warning" /> {course.rating} ({course.reviewCount} reviews)</span>
-                <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {course.enrollmentCount.toLocaleString()} students</span>
-                <span className="flex items-center gap-1"><Globe className="h-4 w-4" /> {course.language}</span>
+                <span className="flex items-center gap-1"><Star className="h-4 w-4 fill-warning text-warning" /> {course.rating ?? 0} ({(course.reviewCount ?? 0)} reviews)</span>
+                <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {(course.enrollmentCount ?? 0).toLocaleString()} students</span>
+                <span className="flex items-center gap-1"><Globe className="h-4 w-4" /> {course.language ?? 'English'}</span>
               </div>
               <div className="mt-3 flex items-center gap-2 text-sm text-primary-foreground/80">
-                <img src={course.instructorAvatar} alt="" className="h-8 w-8 rounded-full object-cover" />
-                <span>Created by <strong>{course.instructorName}</strong></span>
+                <img src={course.instructorAvatar ?? ''} alt="" className="h-8 w-8 rounded-full object-cover" />
+                <span>Created by <strong>{course.instructorName ?? 'Teach-Tribe'}</strong></span>
               </div>
-              <p className="mt-2 text-xs text-primary-foreground/60">Last updated {course.updatedAt}</p>
+              <p className="mt-2 text-xs text-primary-foreground/60">Last updated {course.updatedAt ?? 'Recently'}</p>
             </div>
             <div className="lg:hidden">
               <img src={course.thumbnail} alt={course.title} className="w-full rounded-xl" />
@@ -148,9 +154,9 @@ const CourseDetail = () => {
               <TabsContent value="reviews">
                 <div className="mb-6 flex items-center gap-6">
                   <div className="text-center">
-                    <div className="text-5xl font-bold">{course.rating}</div>
-                    <StarRating rating={course.rating} size={18} />
-                    <p className="text-sm text-muted-foreground">{course.reviewCount} reviews</p>
+                    <div className="text-5xl font-bold">{course.rating ?? 0}</div>
+                    <StarRating rating={course.rating ?? 0} size={18} />
+                    <p className="text-sm text-muted-foreground">{(course.reviewCount ?? 0)} reviews</p>
                   </div>
                   <div className="flex-1 space-y-1">
                     {[5, 4, 3, 2, 1].map(star => {
@@ -209,7 +215,7 @@ const CourseDetail = () => {
                   <div>
                     <h3 className="text-lg font-bold">{course.instructorName}</h3>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      {courses.find(c => c.instructor === course.instructor) && `${courses.filter(c => c.instructor === course.instructor).length} Courses · ${courses.filter(c => c.instructor === course.instructor).reduce((a, c) => a + c.enrollmentCount, 0).toLocaleString()} Students`}
+                      {courses.find(c => c.instructor === course.instructor) && `${courses.filter(c => c.instructor === course.instructor).length} Courses · ${(courses.filter(c => c.instructor === course.instructor).reduce((a, c) => a + (c.enrollmentCount ?? 0), 0)).toLocaleString()} Students`}
                     </p>
                   </div>
                 </div>
@@ -221,7 +227,7 @@ const CourseDetail = () => {
           <div className="hidden lg:block">
             <div className="sticky top-20 rounded-xl border border-border bg-card p-6 card-shadow">
               <img src={course.thumbnail} alt="" className="mb-4 w-full rounded-lg" />
-              <div className="mb-4 text-3xl font-bold">{course.price === 0 ? 'Free' : `₹${course.price.toLocaleString()}`}</div>
+              <div className="mb-4 text-lg font-semibold text-success">Free Access</div>
               {enrolled ? (
                 <Button className="w-full" size="lg" onClick={() => navigate(`/learn/${course.id}`)}>
                   {enrollment?.progress === 100 ? 'View Certificate' : enrollment?.progress ? 'Continue Learning' : 'Go to Course'}
@@ -244,7 +250,7 @@ const CourseDetail = () => {
           {/* Mobile sticky CTA */}
           <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background p-3 lg:hidden">
             <div className="flex items-center justify-between">
-              <span className="text-xl font-bold">{course.price === 0 ? 'Free' : `₹${course.price.toLocaleString()}`}</span>
+              <span className="text-lg font-semibold text-success">Free Access</span>
               {enrolled ? (
                 <Button onClick={() => navigate(`/learn/${course.id}`)}>Continue Learning</Button>
               ) : (

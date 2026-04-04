@@ -12,7 +12,7 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const { profile, role, isAuthenticated, logout } = useAuth();
+  const { profile, role, isAuthenticated, logout, adminUnits, memberships, activeAdminId, switchActiveAdmin } = useAuth();
   const { darkMode, toggleDarkMode, courses } = useCourseStore();
   const navigate = useNavigate();
 
@@ -30,10 +30,15 @@ const Navbar = () => {
   };
 
   const getDashboardLink = () => {
+    if (role === 'master_admin') return '/dashboard/master-admin';
     if (role === 'admin') return '/dashboard/admin';
     if (role === 'instructor') return '/dashboard/instructor';
     return '/dashboard/student';
   };
+
+  const availableWorkspaces = memberships
+    .map((m) => adminUnits.find((a) => a.id === m.adminId))
+    .filter((a): a is NonNullable<typeof a> => !!a);
 
   const handleLogout = async () => {
     await logout();
@@ -45,7 +50,7 @@ const Navbar = () => {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
           <GraduationCap className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold text-gradient">Academia</span>
+          <span className="text-xl font-bold text-gradient">Teach-Tribe</span>
         </Link>
 
         <div className="hidden items-center gap-6 md:flex">
@@ -99,6 +104,20 @@ const Navbar = () => {
                     <p className="text-sm font-medium">{profile.display_name}</p>
                     <p className="text-xs text-muted-foreground capitalize">{role}</p>
                   </div>
+                  {role !== 'master_admin' && availableWorkspaces.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      {availableWorkspaces.map((workspace) => (
+                        <DropdownMenuItem
+                          key={workspace.id}
+                          onClick={() => switchActiveAdmin(workspace.id)}
+                          className={workspace.id === activeAdminId ? 'font-medium text-primary' : ''}
+                        >
+                          {workspace.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate(getDashboardLink())}>
                     <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard

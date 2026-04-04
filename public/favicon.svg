@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="64" y1="36" x2="448" y2="472" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7C3AED"/>
+      <stop offset="0.5" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="capTop" x1="100" y1="165" x2="412" y2="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E5E7EB"/>
+    </linearGradient>
+    <linearGradient id="capSide" x1="305" y1="228" x2="380" y2="310" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C4B5FD"/>
+      <stop offset="1" stop-color="#A78BFA"/>
+    </linearGradient>
+    <linearGradient id="tassel" x1="154" y1="246" x2="154" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FDE68A"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="16" y="16" width="480" height="480" rx="132" fill="url(#bg)"/>
+
+  <path d="M256 120L412 196L256 272L100 196L256 120Z" fill="url(#capTop)"/>
+  <path d="M412 196V245L301 301V252L412 196Z" fill="url(#capSide)"/>
+
+  <path d="M256 286L360 238V286C360 323 315 352 256 352C197 352 152 323 152 286V238L256 286Z" fill="#EEF2FF"/>
+  <path d="M256 286L360 238V259L256 307L152 259V238L256 286Z" fill="#FFFFFF"/>
+
+  <rect x="145" y="200" width="18" height="112" rx="9" fill="url(#tassel)"/>
+  <circle cx="154" cy="336" r="20" fill="#FBBF24"/>
+  <circle cx="154" cy="336" r="9" fill="#FDE68A"/>
+
+  <path d="M90 388C126 428 184 452 256 452C328 452 386 428 422 388" stroke="rgba(255,255,255,0.28)" stroke-width="12" stroke-linecap="round"/>
+</svg>

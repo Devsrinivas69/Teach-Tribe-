@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ const ProfilePage = () => {
   const [name, setName] = useState(profile?.display_name || '');
   const [bio, setBio] = useState(profile?.bio || '');
 
-  if (!user) { navigate('/login'); return null; }
+  if (!user) return <Navigate to="/login" replace />;
 
   const handleSave = async () => {
     await updateProfile({ display_name: name, bio });

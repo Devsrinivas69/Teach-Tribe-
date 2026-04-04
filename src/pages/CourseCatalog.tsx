@@ -8,16 +8,16 @@ import { useCourseStore } from '@/stores/courseStore';
 import { categories } from '@/data/mockData';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Slider } from '@/components/ui/slider';
+import { useAuth } from '@/hooks/useAuth';
 
 const CourseCatalog = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { courses } = useCourseStore();
+  const { isAuthenticated, role, activeAdminId } = useAuth();
 
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [category, setCategory] = useState(searchParams.get('category') || '');
-  const [priceRange, setPriceRange] = useState([0, 10000]);
   const [levels, setLevels] = useState<string[]>([]);
   const [minRating, setMinRating] = useState(0);
   const [sort, setSort] = useState('popular');
@@ -29,26 +29,28 @@ const CourseCatalog = () => {
   const toggleLevel = (level: string) => setLevels(prev => prev.includes(level) ? prev.filter(l => l !== level) : [...prev, level]);
 
   const filtered = useMemo(() => {
-    let result = courses.filter(c => c.isPublished);
+    let result = courses.filter(
+      c => c.isPublished && (c.isLiveVersion ?? true) && (c.versionStatus ? c.versionStatus === 'live' : true)
+    );
+    if (isAuthenticated && role !== 'master_admin' && activeAdminId) {
+      result = result.filter(c => !c.adminId || c.adminId === activeAdminId);
+    }
     if (search) result = result.filter(c => c.title.toLowerCase().includes(search.toLowerCase()) || c.shortDescription.toLowerCase().includes(search.toLowerCase()));
-    if (category) result = result.filter(c => c.category === category);
-    result = result.filter(c => c.price >= priceRange[0] && c.price <= priceRange[1]);
+    if (category && category !== 'all') result = result.filter(c => c.category === category);
     if (levels.length) result = result.filter(c => levels.includes(c.level));
     if (minRating) result = result.filter(c => c.rating >= minRating);
 
     switch (sort) {
       case 'newest': result.sort((a, b) => b.createdAt.localeCompare(a.createdAt)); break;
       case 'popular': result.sort((a, b) => b.enrollmentCount - a.enrollmentCount); break;
-      case 'price-low': result.sort((a, b) => a.price - b.price); break;
-      case 'price-high': result.sort((a, b) => b.price - a.price); break;
       case 'rating': result.sort((a, b) => b.rating - a.rating); break;
     }
     return result;
-  }, [courses, search, category, priceRange, levels, minRating, sort]);
+  }, [courses, search, category, levels, minRating, sort]);
 
   const paginated = filtered.slice(0, page * perPage);
 
-  const clearFilters = () => { setCategory(''); setPriceRange([0, 10000]); setLevels([]); setMinRating(0); setSearch(''); };
+  const clearFilters = () => { setCategory(''); setLevels([]); setMinRating(0); setSearch(''); };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -75,14 +77,6 @@ const CourseCatalog = () => {
                   {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div>
-              <h3 className="mb-2 font-semibold text-sm">Price Range</h3>
-              <Slider value={priceRange} onValueChange={setPriceRange} min={0} max={10000} step={500} className="mb-2" />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>₹{priceRange[0]}</span><span>₹{priceRange[1]}</span>
-              </div>
             </div>
 
             <div>
@@ -129,8 +123,6 @@ const CourseCatalog = () => {
                 <SelectItem value="popular">Most Popular</SelectItem>
                 <SelectItem value="newest">Newest</SelectItem>
                 <SelectItem value="rating">Highest Rated</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
               </SelectContent>
             </Select>
             <div className="hidden items-center gap-1 md:flex">

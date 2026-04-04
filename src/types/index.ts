@@ -1,4 +1,22 @@
-export type UserRole = 'student' | 'instructor' | 'admin';
+export type UserRole = 'student' | 'instructor' | 'admin' | 'master_admin';
+export type AdminStatus = 'active' | 'upcoming';
+
+export interface AdminUnit {
+  id: string;
+  name: string;
+  status: AdminStatus;
+  createdBy?: string;
+  createdAt?: string;
+}
+
+export interface UserAdminMembership {
+  id: string;
+  userId: string;
+  adminId: string;
+  roleUnderAdmin: 'student' | 'instructor' | 'admin';
+  isPrimary: boolean;
+  createdAt: string;
+}
 
 export interface User {
   id: string;
@@ -29,6 +47,46 @@ export interface Section {
   lessons: Lesson[];
 }
 
+export type QuizQuestionType = 'mcq' | 'text';
+
+export interface QuizQuestion {
+  id: string;
+  type: QuizQuestionType;
+  prompt: string;
+  options?: string[];
+  correctOptionIndex?: number;
+  modelAnswer?: string;
+  acceptedAnswers?: string[];
+  requiredKeywords?: string[];
+  marks: number;
+}
+
+export interface CourseQuiz {
+  enabled: boolean;
+  passPercentage: number;
+  maxAttempts: number;
+  questions: QuizQuestion[];
+}
+
+export interface QuizQuestionResult {
+  questionId: string;
+  answer: string;
+  isCorrect: boolean;
+  score: number;
+  maxScore: number;
+  reason: string;
+}
+
+export interface QuizAttemptSummary {
+  totalScore: number;
+  maxScore: number;
+  percentage: number;
+  passed: boolean;
+  attemptedAt: string;
+  attemptNumber: number;
+  results: QuizQuestionResult[];
+}
+
 export interface Review {
   id: string;
   courseId: string;
@@ -42,6 +100,12 @@ export interface Review {
 
 export interface Course {
   id: string;
+  adminId?: string;
+  versionGroupId?: string;
+  versionNumber?: number;
+  versionStatus?: 'draft' | 'live';
+  isLiveVersion?: boolean;
+  previousVersionId?: string;
   title: string;
   shortDescription: string;
   description: string;
@@ -61,6 +125,40 @@ export interface Course {
   isPublished: boolean;
   whatYouLearn: string[];
   requirements: string[];
+  quiz?: CourseQuiz;
+  totalDuration: string;
+  totalLessons: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SafeCourse {
+  id: string;
+  adminId?: string;
+  versionGroupId?: string;
+  versionNumber?: number;
+  versionStatus?: 'draft' | 'live';
+  isLiveVersion?: boolean;
+  previousVersionId?: string;
+  title: string;
+  shortDescription: string;
+  description: string;
+  instructor: string;
+  instructorName: string;
+  instructorAvatar: string;
+  thumbnail: string;
+  category: string;
+  level: 'Beginner' | 'Intermediate' | 'Advanced';
+  language: string;
+  curriculum: Section[];
+  enrollmentCount: number;
+  rating: number;
+  reviewCount: number;
+  reviews: Review[];
+  isPublished: boolean;
+  whatYouLearn: string[];
+  requirements: string[];
+  quiz?: CourseQuiz;
   totalDuration: string;
   totalLessons: number;
   createdAt: string;
@@ -75,6 +173,8 @@ export interface Enrollment {
   completedLessons: string[];
   enrolledAt: string;
   completedAt: string | null;
+  quizAttempts?: QuizAttemptSummary[];
+  latestQuizResult?: QuizAttemptSummary | null;
 }
 
 export interface Notification {

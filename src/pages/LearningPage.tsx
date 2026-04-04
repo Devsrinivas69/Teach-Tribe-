@@ -1,43 +1,104 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useMemo } from 'react';
-import { ChevronDown, ChevronRight, Play, CheckCircle2, Lock, ChevronLeft, ChevronRight as Next, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { ChevronDown, ChevronRight, Play, CheckCircle2, Lock, ChevronLeft, ChevronRight as Next, PanelLeftClose, PanelLeft, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCourseStore } from '@/stores/courseStore';
 import { useAuth } from '@/hooks/useAuth';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { getEmbedUrl } from '@/lib/youtubeUtils';
 
 const LearningPage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { courses, getEnrollment, completeLesson } = useCourseStore();
-  const { user } = useAuth();
+  const { courses, getEnrollment, completeLesson, loadEnrollmentsFromFirestore, getLatestQuizResult } = useCourseStore();
+  const { user, role, activeAdminId } = useAuth();
   const { toast } = useToast();
 
-  const course = courses.find(c => c.id === courseId);
-  const enrollment = user && course ? getEnrollment(user.id, course.id) : undefined;
+  const [enrollmentChecked, setEnrollmentChecked] = useState(false);
 
-  const allLessons = useMemo(() => course?.curriculum.flatMap(s => s.lessons) || [], [course]);
-  const [currentLessonId, setCurrentLessonId] = useState(allLessons[0]?.id || '');
+  const visibleCourses = courses.filter(c => {
+    if (role === 'master_admin') return true;
+    if (!activeAdminId) return true;
+    return !c.adminId || c.adminId === activeAdminId;
+  });
+
+  const course = visibleCourses?.find(c => c?.id === courseId);
+  const enrollment = user && course ? getEnrollment(user?.uid, course?.id) : undefined;
+
+  const allLessons = useMemo(() => {
+    return course?.curriculum?.flatMap(s => s?.lessons) || [];
+  }, [course]);
+
+  const [currentLessonId, setCurrentLessonId] = useState<string>('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [openSections, setOpenSections] = useState<string[]>(course?.curriculum.map(s => s.id) || []);
+  const [openSections, setOpenSections] = useState<string[]>([]);
   const [notes, setNotes] = useState<{ id: string; text: string }[]>([]);
   const [noteText, setNoteText] = useState('');
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
 
-  if (!course || !user) return <div className="flex min-h-screen items-center justify-center"><p>Course not found. <Button variant="link" onClick={() => navigate('/courses')}>Browse courses</Button></p></div>;
-  if (!enrollment) { navigate(`/course/${courseId}`); return null; }
+  // Load enrollments from Firestore on mount so direct navigation works
+  useEffect(() => {
+    if (user?.uid) {
+      loadEnrollmentsFromFirestore(user.uid).finally(() => setEnrollmentChecked(true));
+    }
+  }, [user?.uid]);
+
+  // Initialize current lesson when allLessons is first populated
+  useEffect(() => {
+    if (!currentLessonId && allLessons.length > 0) {
+      setCurrentLessonId(allLessons[0]?.id || '');
+    }
+  }, [allLessons, currentLessonId]);
+
+  // Initialize open sections only once — remove openSections from deps to prevent re-open loop
+  useEffect(() => {
+    if (course?.curriculum && course.curriculum.length > 0 && openSections.length === 0) {
+      setOpenSections(course.curriculum.map(s => s?.id || ''));
+    }
+  }, [course]); // intentionally omit openSections to avoid forcing re-open when user collapses sections
+
+  // Reset loading state when lesson changes
+  useEffect(() => {
+    setIsVideoLoading(true);
+  }, [currentLessonId]);
+
+  // Redirect only after we've confirmed enrollment status from Firestore
+  useEffect(() => {
+    if (enrollmentChecked && !enrollment) {
+      navigate(`/course/${courseId}`);
+    }
+  }, [enrollmentChecked, enrollment, courseId, navigate]);
+
+  if (!course || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p>Course not found. <Button variant="link" onClick={() => navigate('/courses')}>Browse courses</Button></p>
+      </div>
+    );
+  }
+
+  if (!enrollmentChecked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 rounded-full border-4 border-muted border-t-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!enrollment) return null;
 
   const currentLesson = allLessons.find(l => l.id === currentLessonId) || allLessons[0];
   const currentIndex = allLessons.findIndex(l => l.id === currentLessonId);
 
   const toggleSection = (id: string) => setOpenSections(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
 
-  const handleComplete = () => {
-    completeLesson(user.id, course.id, currentLessonId);
+  const handleComplete = async () => {
+    await completeLesson(user.uid, course.id, currentLessonId);
     toast({ title: 'Lesson completed!' });
-    const updated = useCourseStore.getState().getEnrollment(user.id, course.id);
+    const updated = useCourseStore.getState().getEnrollment(user.uid, course.id);
     if (updated?.progress === 100) {
-      toast({ title: '🎉 Congratulations!', description: 'You completed the course! Certificate generated.' });
+      toast({ title: 'Congratulations!', description: 'You completed the course! Certificate generated.' });
     }
   };
 
@@ -53,6 +114,8 @@ const LearningPage = () => {
   };
 
   const isCompleted = (lessonId: string) => enrollment.completedLessons.includes(lessonId);
+  const embedUrl = getEmbedUrl(currentLesson?.videoUrl);
+  const latestQuizResult = getLatestQuizResult(user.uid, course.id);
 
   return (
     <div className="flex h-[calc(100vh-4rem)]">
@@ -102,9 +165,37 @@ const LearningPage = () => {
         </div>
 
         {/* Video */}
-        <div className="relative bg-foreground/5">
-          <div className="aspect-video w-full">
-            <iframe src={currentLesson?.videoUrl} className="h-full w-full" allow="autoplay; fullscreen" allowFullScreen title={currentLesson?.title} />
+        <div className="w-full bg-foreground/5 px-4 py-4">
+          <div className="relative w-full overflow-hidden rounded-lg bg-black" style={{ aspectRatio: '16 / 9', maxHeight: 'calc(100vh - 200px)' }}>
+            {embedUrl ? (
+              <>
+                {isVideoLoading && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="space-y-3">
+                      <div className="h-2 w-24 rounded-full bg-white/20 animate-pulse"></div>
+                      <p className="text-sm text-white/70">Loading video...</p>
+                    </div>
+                  </div>
+                )}
+                <iframe
+                  key={`video-${currentLesson?.id}`}
+                  src={embedUrl}
+                  title={currentLesson?.title || 'Video Player'}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen={true}
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  loading="eager"
+                  className="h-full w-full"
+                  onLoad={() => setIsVideoLoading(false)}
+                />
+              </>
+            ) : (
+              <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-muted">
+                <AlertCircle className="h-12 w-12 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Video not available for this lesson</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -124,6 +215,24 @@ const LearningPage = () => {
             <Button size="sm" onClick={handleComplete} className="bg-primary text-primary-foreground">Mark as Complete</Button>
           )}
         </div>
+
+        {enrollment.progress === 100 && course.quiz?.enabled && (
+          <div className="border-b border-border px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <div>
+                <p className="text-sm font-semibold">Final Quiz Unlocked</p>
+                <p className="text-xs text-muted-foreground">
+                  {latestQuizResult
+                    ? `Latest result: ${latestQuizResult.percentage}% (${latestQuizResult.passed ? 'Passed' : 'Not passed'})`
+                    : `Pass mark: ${course.quiz.passPercentage}%`}
+                </p>
+              </div>
+              <Button size="sm" onClick={() => navigate(`/quiz/${course.id}`)}>
+                {latestQuizResult ? 'Retake Quiz' : 'Start Quiz'}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Lesson content / Notes */}
         <div className="flex-1 p-6">

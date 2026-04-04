@@ -1,5 +1,17 @@
 import { Star } from 'lucide-react';
 
+interface Course {
+  thumbnail: string;
+  title: string;
+  category: string;
+  price: number;
+  instructorAvatar: string;
+  instructorName: string;
+  rating: number;
+  reviewCount: number;
+  totalDuration: string;
+}
+
 export const StarRating = ({ rating, size = 16 }: { rating: number; size?: number }) => (
   <div className="flex items-center gap-0.5">
     {Array.from({ length: 5 }, (_, i) => (
@@ -8,12 +20,12 @@ export const StarRating = ({ rating, size = 16 }: { rating: number; size?: numbe
   </div>
 );
 
-export const CourseCard = ({ course, onClick }: { course: any; onClick: () => void }) => (
+export const CourseCard = ({ course, onClick }: { course: Course; onClick: () => void }) => (
   <div onClick={onClick} className="group cursor-pointer overflow-hidden rounded-xl border border-border bg-card transition-all duration-300 hover:-translate-y-1 card-shadow hover:card-shadow-hover">
     <div className="relative overflow-hidden">
       <img src={course.thumbnail} alt={course.title} className="h-44 w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
       <span className="absolute left-3 top-3 rounded-full bg-primary/90 px-2.5 py-0.5 text-xs font-medium text-primary-foreground">{course.category}</span>
-      {course.price === 0 && <span className="absolute right-3 top-3 rounded-full bg-success px-2.5 py-0.5 text-xs font-medium text-success-foreground">Free</span>}
+      <span className="absolute right-3 top-3 rounded-full bg-success px-2.5 py-0.5 text-xs font-medium text-success-foreground">Free</span>
     </div>
     <div className="p-4">
       <h3 className="mb-1 line-clamp-2 font-semibold leading-tight text-card-foreground">{course.title}</h3>
@@ -22,12 +34,12 @@ export const CourseCard = ({ course, onClick }: { course: any; onClick: () => vo
         {course.instructorName}
       </p>
       <div className="mb-2 flex items-center gap-1.5">
-        <span className="text-sm font-bold text-warning">{course.rating}</span>
-        <StarRating rating={course.rating} />
-        <span className="text-xs text-muted-foreground">({course.reviewCount.toLocaleString()})</span>
+        <span className="text-sm font-bold text-warning">{course.rating ?? 0}</span>
+        <StarRating rating={course.rating ?? 0} />
+        <span className="text-xs text-muted-foreground">({(course.reviewCount ?? 0).toLocaleString()})</span>
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-lg font-bold text-foreground">{course.price === 0 ? 'Free' : `₹${course.price.toLocaleString()}`}</span>
+        <span className="text-lg font-bold text-foreground">Free</span>
         <span className="text-xs text-muted-foreground">{course.totalDuration}</span>
       </div>
     </div>

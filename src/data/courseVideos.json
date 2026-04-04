@@ -1,0 +1,133 @@
+{
+  "c1": {
+    "title": "Complete React Developer Course",
+    "sections": [
+      {
+        "id": "sec-0",
+        "title": "Getting Started",
+        "lessons": [
+          { "id": "les-0-0", "title": "Introduction to React", "videoId": "dQw4w9WgXcQ" },
+          { "id": "les-0-1", "title": "Setting Up Environment", "videoId": "fy8Z7UjnQlc" },
+          { "id": "les-0-2", "title": "Your First Component", "videoId": "dM6G6H6xOkk" }
+        ]
+      },
+      {
+        "id": "sec-1",
+        "title": "React Fundamentals",
+        "lessons": [
+          { "id": "les-1-0", "title": "JSX Deep Dive", "videoId": "JkIoPysR7SY" },
+          { "id": "les-1-1", "title": "Props and State", "videoId": "w8RQP2F6q7A" },
+          { "id": "les-1-2", "title": "Event Handling", "videoId": "pEJ5dlqKZ5Y" }
+        ]
+      },
+      {
+        "id": "sec-2",
+        "title": "Advanced Concepts",
+        "lessons": [
+          { "id": "les-2-0", "title": "Hooks In Depth", "videoId": "WQEEaXO2kTc" },
+          { "id": "les-2-1", "title": "Context API", "videoId": "C0j272QRQME" },
+          { "id": "les-2-2", "title": "Performance Optimization", "videoId": "YL1F4dCySLs" }
+        ]
+      }
+    ]
+  },
+  "c2": {
+    "title": "Node.js & Express Masterclass",
+    "sections": [
+      {
+        "id": "sec-0",
+        "title": "Node.js Basics",
+        "lessons": [
+          { "id": "les-0-0", "title": "What is Node.js?", "videoId": "DKSGMEe1jJY" },
+          { "id": "les-0-1", "title": "Modules and NPM", "videoId": "xRnjXZ1E6l4" }
+        ]
+      },
+      {
+        "id": "sec-1",
+        "title": "Express Framework",
+        "lessons": [
+          { "id": "les-1-0", "title": "Setting Up Express", "videoId": "T5O4Y7f9qAE" },
+          { "id": "les-1-1", "title": "Routing & Middleware", "videoId": "RrsT-2VFVPI" },
+          { "id": "les-1-2", "title": "REST API Design", "videoId": "h-9D0_7a9pI" }
+        ]
+      }
+    ]
+  },
+  "c3": {
+    "title": "Python for Data Science & AI",
+    "sections": [
+      {
+        "id": "sec-0",
+        "title": "Python Basics",
+        "lessons": [
+          { "id": "les-0-0", "title": "Python Setup", "videoId": "kqtZrmDci4E" },
+          { "id": "les-0-1", "title": "Variables & Data Types", "videoId": "jTYiNjvMg08" },
+          { "id": "les-0-2", "title": "Control Flow", "videoId": "oYbVFYc92Co" }
+        ]
+      },
+      {
+        "id": "sec-1",
+        "title": "Data Analysis",
+        "lessons": [
+          { "id": "les-1-0", "title": "NumPy Fundamentals", "videoId": "QUT1VHiUKYs" },
+          { "id": "les-1-1", "title": "Pandas DataFrames", "videoId": "vmEHCJsSU50" }
+        ]
+      },
+      {
+        "id": "sec-2",
+        "title": "Machine Learning",
+        "lessons": [
+          { "id": "les-2-0", "title": "Introduction to ML", "videoId": "aircAruvnKk" },
+          { "id": "les-2-1", "title": "Linear Regression", "videoId": "4b4MrC0tgII" }
+        ]
+      }
+    ]
+  },
+  "c4": {
+    "title": "UI/UX Design Masterclass",
+    "sections": [
+      {
+        "id": "sec-0",
+        "title": "Design Fundamentals",
+        "lessons": [
+          { "id": "les-0-0", "title": "Design Thinking", "videoId": "EhPvN8FqPJA" },
+          { "id": "les-0-1", "title": "Color Theory", "videoId": "nE1V24mWr7s" }
+        ]
+      },
+      {
+        "id": "sec-1",
+        "title": "Figma Mastery",
+        "lessons": [
+          { "id": "les-1-0", "title": "Figma Interface", "videoId": "II-6dQryllw" },
+          { "id": "les-1-1", "title": "Components & Variants", "videoId": "HzFWl0v6ZdY" }
+        ]
+      }
+    ]
+  },
+  "c5": {
+    "title": "Digital Marketing Complete Guide",
+    "sections": [
+      {
+        "id": "sec-0",
+        "title": "Digital Marketing Essentials",
+        "lessons": [
+          { "id": "les-0-0", "title": "Introduction to Digital Marketing", "videoId": "dvLYGHZHWAA" },
+          { "id": "les-0-1", "title": "Creating Your Strategy", "videoId": "EeMd0V6_OY8" }
+        ]
+      }
+    ]
+  },
+  "c6": {
+    "title": "Advanced JavaScript ES6+",
+    "sections": [
+      {
+        "id": "sec-0",
+        "title": "ES6 Basics",
+        "lessons": [
+          { "id": "les-0-0", "title": "Arrow Functions", "videoId": "hJvfKHG0YZk" },
+          { "id": "les-0-1", "title": "Destructuring", "videoId": "qwefHEisAxo" }
+        ]
+      }
+    ]
+  }
+}

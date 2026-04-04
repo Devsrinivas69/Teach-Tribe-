@@ -6,6 +6,9 @@ import { CourseCard, StarRating } from '@/components/shared/CourseCard';
 import { useCourseStore } from '@/stores/courseStore';
 import { testimonials, categories } from '@/data/mockData';
 import { useState, useEffect, useRef } from 'react';
+import { collection, getCountFromServer, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/hooks/useAuth';
 
 const categoryIcons: Record<string, any> = {
   'Web Development': Code, 'Data Science': BarChart3, 'Design': Palette, 'Business': Briefcase,
@@ -42,7 +45,7 @@ const AnimatedCounter = ({ target, label, icon: Icon }: { target: number; label:
       <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
         <Icon className="h-7 w-7 text-primary" />
       </div>
-      <div className="text-3xl font-bold text-foreground">{count.toLocaleString()}+</div>
+      <div className="text-3xl font-bold text-foreground">{(count ?? 0).toLocaleString()}+</div>
       <div className="text-sm text-muted-foreground">{label}</div>
     </div>
   );
@@ -51,7 +54,71 @@ const AnimatedCounter = ({ target, label, icon: Icon }: { target: number; label:
 const HomePage = () => {
   const navigate = useNavigate();
   const { courses } = useCourseStore();
-  const featured = courses.slice(0, 6);
+  const { isAuthenticated, role, activeAdminId } = useAuth();
+  const visibleCourses = courses.filter(c => {
+    const isLive = c.isPublished && (c.isLiveVersion ?? true) && (c.versionStatus ? c.versionStatus === 'live' : true);
+    if (!isLive) return false;
+    if (!isAuthenticated) return true;
+    if (role === 'master_admin') return true;
+    if (!activeAdminId) return true;
+    return !c.adminId || c.adminId === activeAdminId;
+  });
+  const featured = visibleCourses.slice(0, 6);
+
+  // Real-time stats from Firestore
+  const [stats, setStats] = useState({ students: 0, courses: 0, instructors: 0, successRate: 0 });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Count students
+        const studentsSnap = await getCountFromServer(
+          query(collection(db, 'user_roles'), where('role', '==', 'student'))
+        );
+        const studentCount = studentsSnap.data().count;
+
+        // Count courses
+        const coursesSnap = await getCountFromServer(collection(db, 'courses'));
+        const courseCount = coursesSnap.data().count;
+
+        // Count instructors
+        const instructorsSnap = await getCountFromServer(
+          query(collection(db, 'user_roles'), where('role', '==', 'instructor'))
+        );
+        const instructorCount = instructorsSnap.data().count;
+
+        // Count enrollments for success rate
+        const totalEnrollmentsSnap = await getCountFromServer(collection(db, 'enrollments'));
+        const totalEnrollments = totalEnrollmentsSnap.data().count;
+        let rate = 0;
+        if (totalEnrollments > 0) {
+          const completedSnap = await getCountFromServer(
+            query(collection(db, 'enrollments'), where('progress', '==', 100))
+          );
+          rate = Math.round((completedSnap.data().count / totalEnrollments) * 100);
+        }
+
+        setStats({
+          students: studentCount || 0,
+          courses: courseCount || courses.length,
+          instructors: instructorCount || 0,
+          successRate: rate || 0,
+        });
+      } catch (err) {
+        // Fallback to local data if Firestore is unavailable
+        console.warn('Firestore stats unavailable, using local data:', err);
+        const uniqueInstructors = new Set(visibleCourses.map(c => c.instructor)).size;
+        setStats({
+          students: 0,
+          courses: visibleCourses.length,
+          instructors: uniqueInstructors,
+          successRate: 0,
+        });
+      }
+    };
+
+    fetchStats();
+  }, [courses, visibleCourses]);
 
   return (
     <div>
@@ -84,10 +151,10 @@ const HomePage = () => {
       {/* Stats */}
       <section className="border-b border-border bg-card py-16">
         <div className="container mx-auto grid grid-cols-2 gap-8 px-4 md:grid-cols-4">
-          <AnimatedCounter target={50000} label="Active Students" icon={Users} />
-          <AnimatedCounter target={500} label="Expert Courses" icon={BookOpen} />
-          <AnimatedCounter target={200} label="Instructors" icon={Award} />
-          <AnimatedCounter target={95} label="Success Rate %" icon={TrendingUp} />
+          <AnimatedCounter target={stats.students} label="Active Students" icon={Users} />
+          <AnimatedCounter target={stats.courses} label="Expert Courses" icon={BookOpen} />
+          <AnimatedCounter target={stats.instructors} label="Instructors" icon={Award} />
+          <AnimatedCounter target={stats.successRate} label="Success Rate %" icon={TrendingUp} />
         </div>
       </section>
 
@@ -119,7 +186,7 @@ const HomePage = () => {
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {categories.map(cat => {
               const Icon = categoryIcons[cat] || Code;
-              const count = courses.filter(c => c.category === cat).length;
+              const count = visibleCourses.filter(c => c.category === cat).length;
               return (
                 <motion.div key={cat} whileHover={{ y: -4 }}
                   onClick={() => navigate(`/courses?category=${cat}`)}
@@ -164,7 +231,7 @@ const HomePage = () => {
       <section className="hero-gradient py-16">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-primary-foreground">Start Learning Today</h2>
-          <p className="mx-auto mt-3 max-w-xl text-primary-foreground/80">Join thousands of students already learning on Academia. Your journey starts here.</p>
+          <p className="mx-auto mt-3 max-w-xl text-primary-foreground/80">Join thousands of students already learning on Teach-Tribe. Your journey starts here.</p>
           <Button size="lg" className="mt-6 bg-background text-foreground hover:bg-background/90" onClick={() => navigate('/signup')}>
             Get Started for Free
           </Button>

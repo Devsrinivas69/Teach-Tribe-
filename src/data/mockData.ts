@@ -36,14 +36,14 @@ export const users: User[] = [
   { id: 'a1', name: 'Admin User', email: 'admin@test.com', password: 'password123', role: 'admin', avatar: avatars[0], bio: 'Platform administrator', enrolledCourses: [], createdCourses: [], createdAt: '2023-01-01' },
 ];
 
-const makeCurriculum = (sections: { title: string; lessons: { title: string; dur: string }[] }[]) =>
+const makeCurriculum = (courseId: string, sections: { title: string; lessons: { title: string; dur: string; videoUrl: string }[] }[]) =>
   sections.map((s, si) => ({
-    id: `sec-${si}`,
+    id: `${courseId}-sec-${si}`,
     title: s.title,
     lessons: s.lessons.map((l, li) => ({
-      id: `les-${si}-${li}`,
+      id: `${courseId}-les-${si}-${li}`,
       title: l.title,
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      videoUrl: l.videoUrl,
       duration: l.dur,
       description: `Learn about ${l.title.toLowerCase()} in this comprehensive lesson.`,
       isFree: li === 0,
@@ -58,11 +58,23 @@ export const courses: Course[] = [
     id: 'c1', title: 'Complete React Developer Course', shortDescription: 'Master React 18 with hooks, context, Redux and build real projects',
     description: 'This comprehensive React course will take you from beginner to advanced. You will learn everything from JSX, components, state management with hooks and context API, to advanced patterns like render props and higher-order components. Build multiple real-world projects including a full e-commerce application.',
     instructor: 'u1', instructorName: 'John Smith', instructorAvatar: avatars[0],
-    thumbnail: thumbnails[0], price: 2999, category: 'Web Development', level: 'Intermediate', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'Getting Started', lessons: [{ title: 'Introduction to React', dur: '12:30' }, { title: 'Setting Up Environment', dur: '8:45' }, { title: 'Your First Component', dur: '15:20' }] },
-      { title: 'React Fundamentals', lessons: [{ title: 'JSX Deep Dive', dur: '18:00' }, { title: 'Props and State', dur: '22:15' }, { title: 'Event Handling', dur: '14:50' }] },
-      { title: 'Advanced Concepts', lessons: [{ title: 'Hooks In Depth', dur: '25:00' }, { title: 'Context API', dur: '20:30' }, { title: 'Performance Optimization', dur: '19:45' }] },
+    thumbnail: thumbnails[0], price: 0, category: 'Web Development', level: 'Intermediate', language: 'English',
+    curriculum: makeCurriculum('c1', [
+      { title: 'Getting Started', lessons: [
+        { title: 'Introduction to React', dur: '12:30', videoUrl: 'SqcY0GlETPk' },
+        { title: 'Setting Up Environment', dur: '8:45', videoUrl: 'w7ejDZ8SWv8' },
+        { title: 'Your First Component', dur: '15:20', videoUrl: 'Tn6-PIqc4UM' }
+      ] },
+      { title: 'React Fundamentals', lessons: [
+        { title: 'JSX Deep Dive', dur: '18:00', videoUrl: '_ZTT9kw3PIE' },
+        { title: 'Props and State', dur: '22:15', videoUrl: 'IYvD9oBCuJI' },
+        { title: 'Event Handling', dur: '14:50', videoUrl: '0XSDAup85SA' }
+      ] },
+      { title: 'Advanced Concepts', lessons: [
+        { title: 'Hooks In Depth', dur: '25:00', videoUrl: 'TNhaISOUy6Q' },
+        { title: 'Context API', dur: '20:30', videoUrl: '5LrDIWkK_Bc' },
+        { title: 'Performance Optimization', dur: '19:45', videoUrl: '4UZrsTqkcW4' }
+      ] },
     ]),
     enrollmentCount: 15420, rating: 4.8, reviewCount: 3241, reviews: [], isPublished: true,
     whatYouLearn: ['Build powerful React applications from scratch', 'Master React Hooks and Context API', 'Understand component lifecycle and optimization', 'Deploy React apps to production'],
@@ -73,10 +85,17 @@ export const courses: Course[] = [
     id: 'c2', title: 'Node.js & Express Masterclass', shortDescription: 'Build scalable backend applications with Node.js and Express',
     description: 'Learn server-side JavaScript with Node.js and Express. Build REST APIs, handle authentication, work with databases, and deploy to the cloud.',
     instructor: 'u1', instructorName: 'John Smith', instructorAvatar: avatars[0],
-    thumbnail: thumbnails[7], price: 3499, category: 'Web Development', level: 'Intermediate', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'Node.js Basics', lessons: [{ title: 'What is Node.js?', dur: '10:00' }, { title: 'Modules and NPM', dur: '14:30' }] },
-      { title: 'Express Framework', lessons: [{ title: 'Setting Up Express', dur: '12:00' }, { title: 'Routing & Middleware', dur: '18:00' }, { title: 'REST API Design', dur: '22:00' }] },
+    thumbnail: thumbnails[7], price: 0, category: 'Web Development', level: 'Intermediate', language: 'English',
+    curriculum: makeCurriculum('c2', [
+      { title: 'Node.js Basics', lessons: [
+        { title: 'What is Node.js?', dur: '10:00', videoUrl: 'TlB_eWDSMt4' },
+        { title: 'Modules and NPM', dur: '14:30', videoUrl: 'Oe421EPjeBE' }
+      ] },
+      { title: 'Express Framework', lessons: [
+        { title: 'Setting Up Express', dur: '12:00', videoUrl: 'L72fhGm1tfE' },
+        { title: 'Routing & Middleware', dur: '18:00', videoUrl: 'lY6icfhap2o' },
+        { title: 'REST API Design', dur: '22:00', videoUrl: 'pKd0Rpw7O48' }
+      ] },
     ]),
     enrollmentCount: 8930, rating: 4.7, reviewCount: 1820, reviews: [], isPublished: true,
     whatYouLearn: ['Build REST APIs with Express', 'Handle authentication with JWT', 'Work with MongoDB and PostgreSQL', 'Deploy Node.js apps'],
@@ -84,14 +103,24 @@ export const courses: Course[] = [
     totalDuration: '36 hours', totalLessons: 5, createdAt: '2023-08-10', updatedAt: '2024-10-15',
   },
   {
-    id: 'c3', title: 'Python for Data Science & AI', shortDescription: 'Complete Python bootcamp for data science, machine learning and AI',
+    id: 'c3', title: 'Python for Data Science & AI', shortDescription: 'Learn Python, Data Analysis, and Machine Learning fundamentals',
     description: 'Master Python programming for data science. Learn NumPy, Pandas, Matplotlib, Scikit-learn, and TensorFlow through hands-on projects.',
     instructor: 'u2', instructorName: 'Sarah Johnson', instructorAvatar: avatars[1],
-    thumbnail: thumbnails[1], price: 4999, category: 'Data Science', level: 'Beginner', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'Python Basics', lessons: [{ title: 'Python Setup', dur: '8:00' }, { title: 'Variables & Data Types', dur: '16:00' }, { title: 'Control Flow', dur: '14:00' }] },
-      { title: 'Data Analysis', lessons: [{ title: 'NumPy Fundamentals', dur: '20:00' }, { title: 'Pandas DataFrames', dur: '25:00' }] },
-      { title: 'Machine Learning', lessons: [{ title: 'Introduction to ML', dur: '18:00' }, { title: 'Linear Regression', dur: '22:00' }] },
+    thumbnail: thumbnails[1], price: 0, category: 'Data Science', level: 'Beginner', language: 'English',
+    curriculum: makeCurriculum('c3', [
+      { title: 'Python Basics', lessons: [
+        { title: 'Python Setup', dur: '8:00', videoUrl: 'kqtD5dpn9C8' },
+        { title: 'Variables & Data Types', dur: '16:00', videoUrl: 'cQT33yu9pY8' },
+        { title: 'Control Flow', dur: '14:00', videoUrl: 'Zp5MuPOtsSY' }
+      ] },
+      { title: 'Data Analysis', lessons: [
+        { title: 'NumPy Fundamentals', dur: '20:00', videoUrl: 'QUT1VHiLmmI' },
+        { title: 'Pandas DataFrames', dur: '25:00', videoUrl: 'vmEHCJofslg' }
+      ] },
+      { title: 'Machine Learning', lessons: [
+        { title: 'Introduction to ML', dur: '18:00', videoUrl: 'i_LwzRVP7bg' },
+        { title: 'Linear Regression', dur: '22:00', videoUrl: 'nk2CQITm_eo' }
+      ] },
     ]),
     enrollmentCount: 22150, rating: 4.9, reviewCount: 5430, reviews: [], isPublished: true,
     whatYouLearn: ['Python programming from scratch', 'Data analysis with Pandas', 'Machine learning with Scikit-learn', 'Deep learning basics with TensorFlow'],
@@ -102,10 +131,16 @@ export const courses: Course[] = [
     id: 'c4', title: 'UI/UX Design Masterclass', shortDescription: 'Learn user interface and experience design from scratch to professional',
     description: 'Complete UI/UX design course covering user research, wireframing, prototyping, visual design, and usability testing with Figma.',
     instructor: 'u3', instructorName: 'Mike Davis', instructorAvatar: avatars[2],
-    thumbnail: thumbnails[2], price: 2499, category: 'Design', level: 'Beginner', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'Design Fundamentals', lessons: [{ title: 'Design Thinking', dur: '15:00' }, { title: 'Color Theory', dur: '12:00' }] },
-      { title: 'Figma Mastery', lessons: [{ title: 'Figma Interface', dur: '18:00' }, { title: 'Components & Variants', dur: '22:00' }] },
+    thumbnail: thumbnails[2], price: 0, category: 'Design', level: 'Beginner', language: 'English',
+    curriculum: makeCurriculum('c4', [
+      { title: 'Design Fundamentals', lessons: [
+        { title: 'Design Thinking', dur: '15:00', videoUrl: '68w2VwalD5w' },
+        { title: 'Color Theory', dur: '12:00', videoUrl: 'WONZVnlam6U' }
+      ] },
+      { title: 'Figma Mastery', lessons: [
+        { title: 'Figma Interface', dur: '18:00', videoUrl: 'c9Wg6Cb_YlU' },
+        { title: 'Components & Variants', dur: '22:00', videoUrl: 'FJDVKeh7RJI' }
+      ] },
     ]),
     enrollmentCount: 11200, rating: 4.6, reviewCount: 2100, reviews: [], isPublished: true,
     whatYouLearn: ['Design thinking methodology', 'Wireframing and prototyping', 'Visual design principles', 'Figma professional workflows'],
@@ -116,10 +151,16 @@ export const courses: Course[] = [
     id: 'c5', title: 'Digital Marketing Complete Guide', shortDescription: 'Master SEO, social media, email marketing, and paid advertising',
     description: 'Comprehensive digital marketing course covering all major channels. Learn to create marketing strategies that drive real results.',
     instructor: 'u4', instructorName: 'Emily Chen', instructorAvatar: avatars[3],
-    thumbnail: thumbnails[5], price: 1999, category: 'Marketing', level: 'Beginner', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'Marketing Fundamentals', lessons: [{ title: 'Digital Marketing Overview', dur: '10:00' }, { title: 'Building a Strategy', dur: '16:00' }] },
-      { title: 'SEO & Content', lessons: [{ title: 'SEO Basics', dur: '20:00' }, { title: 'Content Marketing', dur: '18:00' }] },
+    thumbnail: thumbnails[5], price: 0, category: 'Marketing', level: 'Beginner', language: 'English',
+    curriculum: makeCurriculum('c5', [
+      { title: 'Marketing Fundamentals', lessons: [
+        { title: 'Digital Marketing Overview', dur: '10:00', videoUrl: 'xBIVlM435Zg' },
+        { title: 'Building a Strategy', dur: '16:00', videoUrl: 'qp0HIF3SfI4' }
+      ] },
+      { title: 'SEO & Content', lessons: [
+        { title: 'SEO Basics', dur: '20:00', videoUrl: '2JYT5f2isg4' },
+        { title: 'Content Marketing', dur: '18:00', videoUrl: 'rrkrvAUbU9Y' }
+      ] },
     ]),
     enrollmentCount: 9800, rating: 4.5, reviewCount: 1650, reviews: [], isPublished: true,
     whatYouLearn: ['SEO fundamentals and advanced techniques', 'Social media marketing', 'Email marketing automation', 'Google Ads and Facebook Ads'],
@@ -131,9 +172,15 @@ export const courses: Course[] = [
     description: 'Master TypeScript and take your JavaScript skills to the next level with type safety, generics, decorators and more.',
     instructor: 'u1', instructorName: 'John Smith', instructorAvatar: avatars[0],
     thumbnail: thumbnails[3], price: 0, category: 'Web Development', level: 'Intermediate', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'TypeScript Basics', lessons: [{ title: 'Why TypeScript?', dur: '8:00' }, { title: 'Types & Interfaces', dur: '20:00' }] },
-      { title: 'Advanced TypeScript', lessons: [{ title: 'Generics', dur: '25:00' }, { title: 'Decorators', dur: '18:00' }] },
+    curriculum: makeCurriculum('c6', [
+      { title: 'TypeScript Basics', lessons: [
+        { title: 'Why TypeScript?', dur: '8:00', videoUrl: 'ahCwqrYpIuM' },
+        { title: 'Types & Interfaces', dur: '20:00', videoUrl: 'BwuLxPH8IDs' }
+      ] },
+      { title: 'Advanced TypeScript', lessons: [
+        { title: 'Generics', dur: '25:00', videoUrl: 'gp5H0Vw39yw' },
+        { title: 'Decorators', dur: '18:00', videoUrl: 'gieEQFIfgYc' }
+      ] },
     ]),
     enrollmentCount: 18500, rating: 4.8, reviewCount: 4200, reviews: [], isPublished: true,
     whatYouLearn: ['TypeScript type system', 'Generics and utility types', 'Integration with React', 'Best practices and patterns'],
@@ -144,10 +191,16 @@ export const courses: Course[] = [
     id: 'c7', title: 'Machine Learning A-Z', shortDescription: 'Hands-on machine learning with Python and R',
     description: 'Learn machine learning algorithms, data preprocessing, model evaluation and deployment in this comprehensive course.',
     instructor: 'u2', instructorName: 'Sarah Johnson', instructorAvatar: avatars[1],
-    thumbnail: thumbnails[4], price: 5999, category: 'Data Science', level: 'Advanced', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'Data Preprocessing', lessons: [{ title: 'Handling Missing Data', dur: '15:00' }, { title: 'Feature Scaling', dur: '12:00' }] },
-      { title: 'Regression', lessons: [{ title: 'Simple Linear Regression', dur: '20:00' }, { title: 'Multiple Linear Regression', dur: '18:00' }] },
+    thumbnail: thumbnails[4], price: 0, category: 'Data Science', level: 'Advanced', language: 'English',
+    curriculum: makeCurriculum('c7', [
+      { title: 'Data Preprocessing', lessons: [
+        { title: 'Handling Missing Data', dur: '15:00', videoUrl: 'i_LwzRVP7bg' },
+        { title: 'Feature Scaling', dur: '12:00', videoUrl: 'vmEHCJofslg' }
+      ] },
+      { title: 'Regression', lessons: [
+        { title: 'Simple Linear Regression', dur: '20:00', videoUrl: 'nk2CQITm_eo' },
+        { title: 'Multiple Linear Regression', dur: '18:00', videoUrl: 'IHZwWFHWa-w' }
+      ] },
     ]),
     enrollmentCount: 13400, rating: 4.7, reviewCount: 2800, reviews: [], isPublished: true,
     whatYouLearn: ['Data preprocessing techniques', 'Supervised and unsupervised learning', 'Model evaluation and selection', 'Deep learning fundamentals'],
@@ -158,10 +211,16 @@ export const courses: Course[] = [
     id: 'c8', title: 'Graphic Design with Adobe Suite', shortDescription: 'Master Photoshop, Illustrator and InDesign',
     description: 'Complete graphic design course covering all Adobe Creative Suite tools for professional design work.',
     instructor: 'u3', instructorName: 'Mike Davis', instructorAvatar: avatars[2],
-    thumbnail: thumbnails[6], price: 3999, category: 'Design', level: 'Beginner', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'Photoshop Basics', lessons: [{ title: 'Interface Tour', dur: '10:00' }, { title: 'Layers & Masks', dur: '22:00' }] },
-      { title: 'Illustrator', lessons: [{ title: 'Vector Graphics', dur: '18:00' }, { title: 'Logo Design', dur: '25:00' }] },
+    thumbnail: thumbnails[6], price: 0, category: 'Design', level: 'Beginner', language: 'English',
+    curriculum: makeCurriculum('c8', [
+      { title: 'Photoshop Basics', lessons: [
+        { title: 'Interface Tour', dur: '10:00', videoUrl: 'WONZVnlam6U' },
+        { title: 'Layers & Masks', dur: '22:00', videoUrl: '68w2VwalD5w' }
+      ] },
+      { title: 'Illustrator', lessons: [
+        { title: 'Vector Graphics', dur: '18:00', videoUrl: 'c9Wg6Cb_YlU' },
+        { title: 'Logo Design', dur: '25:00', videoUrl: 'xBIVlM435Zg' }
+      ] },
     ]),
     enrollmentCount: 7600, rating: 4.4, reviewCount: 1200, reviews: [], isPublished: true,
     whatYouLearn: ['Photoshop photo editing', 'Illustrator vector design', 'InDesign layout design', 'Professional design workflows'],
@@ -172,10 +231,16 @@ export const courses: Course[] = [
     id: 'c9', title: 'Business Strategy & Management', shortDescription: 'Learn strategic thinking and business management skills',
     description: 'Develop essential business strategy skills used by top consultants and Fortune 500 executives.',
     instructor: 'u4', instructorName: 'Emily Chen', instructorAvatar: avatars[3],
-    thumbnail: thumbnails[8], price: 3499, category: 'Business', level: 'Intermediate', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'Strategic Thinking', lessons: [{ title: 'Competitive Analysis', dur: '16:00' }, { title: 'SWOT Analysis', dur: '12:00' }] },
-      { title: 'Leadership', lessons: [{ title: 'Team Management', dur: '20:00' }, { title: 'Decision Making', dur: '15:00' }] },
+    thumbnail: thumbnails[8], price: 0, category: 'Business', level: 'Intermediate', language: 'English',
+    curriculum: makeCurriculum('c9', [
+      { title: 'Strategic Thinking', lessons: [
+        { title: 'Competitive Analysis', dur: '16:00', videoUrl: '6IFR3WYSBFM' },
+        { title: 'SWOT Analysis', dur: '12:00', videoUrl: 'qp0HIF3SfI4' }
+      ] },
+      { title: 'Leadership', lessons: [
+        { title: 'Team Management', dur: '20:00', videoUrl: 'rrkrvAUbU9Y' },
+        { title: 'Decision Making', dur: '15:00', videoUrl: 'Unzc731iCUY' }
+      ] },
     ]),
     enrollmentCount: 6200, rating: 4.6, reviewCount: 980, reviews: [], isPublished: true,
     whatYouLearn: ['Strategic planning frameworks', 'Competitive analysis', 'Team leadership', 'Financial decision making'],
@@ -186,10 +251,16 @@ export const courses: Course[] = [
     id: 'c10', title: 'React Native Mobile Development', shortDescription: 'Build cross-platform mobile apps with React Native',
     description: 'Learn to build beautiful, performant mobile applications for iOS and Android using React Native and Expo.',
     instructor: 'u5', instructorName: 'Alex Kumar', instructorAvatar: avatars[4],
-    thumbnail: thumbnails[9], price: 4499, category: 'Mobile Development', level: 'Intermediate', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'React Native Setup', lessons: [{ title: 'Getting Started with Expo', dur: '12:00' }, { title: 'Core Components', dur: '18:00' }] },
-      { title: 'Navigation & State', lessons: [{ title: 'React Navigation', dur: '20:00' }, { title: 'State Management', dur: '16:00' }] },
+    thumbnail: thumbnails[9], price: 0, category: 'Mobile Development', level: 'Intermediate', language: 'English',
+    curriculum: makeCurriculum('c10', [
+      { title: 'React Native Setup', lessons: [
+        { title: 'Getting Started with Expo', dur: '12:00', videoUrl: 'ZBCUegTZF7M' },
+        { title: 'Core Components', dur: '18:00', videoUrl: 'bMknfKXIFA8' }
+      ] },
+      { title: 'Navigation & State', lessons: [
+        { title: 'React Navigation', dur: '20:00', videoUrl: '4UZrsTqkcW4' },
+        { title: 'State Management', dur: '16:00', videoUrl: 'IYvD9oBCuJI' }
+      ] },
     ]),
     enrollmentCount: 10300, rating: 4.7, reviewCount: 2100, reviews: [], isPublished: true,
     whatYouLearn: ['React Native fundamentals', 'Cross-platform development', 'Navigation patterns', 'Publishing to App Store'],
@@ -200,10 +271,16 @@ export const courses: Course[] = [
     id: 'c11', title: 'Deep Learning with TensorFlow', shortDescription: 'Build neural networks and AI models with TensorFlow',
     description: 'Advanced deep learning course covering CNNs, RNNs, GANs and transformers with TensorFlow and Keras.',
     instructor: 'u2', instructorName: 'Sarah Johnson', instructorAvatar: avatars[1],
-    thumbnail: thumbnails[10], price: 6999, category: 'Data Science', level: 'Advanced', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'Neural Networks', lessons: [{ title: 'Perceptrons & Activation', dur: '18:00' }, { title: 'Backpropagation', dur: '25:00' }] },
-      { title: 'CNNs', lessons: [{ title: 'Convolutional Layers', dur: '22:00' }, { title: 'Image Classification', dur: '20:00' }] },
+    thumbnail: thumbnails[10], price: 0, category: 'Data Science', level: 'Advanced', language: 'English',
+    curriculum: makeCurriculum('c11', [
+      { title: 'Neural Networks', lessons: [
+        { title: 'Perceptrons & Activation', dur: '18:00', videoUrl: 'aircAruvnKk' },
+        { title: 'Backpropagation', dur: '25:00', videoUrl: 'Ilg3gGewQ5U' }
+      ] },
+      { title: 'CNNs', lessons: [
+        { title: 'Convolutional Layers', dur: '22:00', videoUrl: 'Lakz2MoHy6o' },
+        { title: 'Image Classification', dur: '20:00', videoUrl: 'tPYj3fFJGjk' }
+      ] },
     ]),
     enrollmentCount: 5800, rating: 4.9, reviewCount: 1450, reviews: [], isPublished: true,
     whatYouLearn: ['Neural network architecture', 'CNNs for computer vision', 'RNNs for NLP', 'Model deployment'],
@@ -214,9 +291,12 @@ export const courses: Course[] = [
     id: 'c12', title: 'Motion Design with After Effects', shortDescription: 'Create stunning animations and motion graphics',
     description: 'Learn professional motion design and animation techniques using Adobe After Effects from beginner to advanced.',
     instructor: 'u3', instructorName: 'Mike Davis', instructorAvatar: avatars[2],
-    thumbnail: thumbnails[11], price: 2999, category: 'Design', level: 'Beginner', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'After Effects Basics', lessons: [{ title: 'Interface & Workflow', dur: '14:00' }, { title: 'Keyframes & Animation', dur: '20:00' }] },
+    thumbnail: thumbnails[11], price: 0, category: 'Design', level: 'Beginner', language: 'English',
+    curriculum: makeCurriculum('c12', [
+      { title: 'After Effects Basics', lessons: [
+        { title: 'Interface & Workflow', dur: '14:00', videoUrl: 'WONZVnlam6U' },
+        { title: 'Keyframes & Animation', dur: '20:00', videoUrl: '68w2VwalD5w' }
+      ] },
     ]),
     enrollmentCount: 4500, rating: 4.5, reviewCount: 720, reviews: [], isPublished: true,
     whatYouLearn: ['After Effects fundamentals', 'Keyframe animation', 'Motion graphics', 'Video compositing'],
@@ -228,9 +308,14 @@ export const courses: Course[] = [
     description: 'Learn proven social media marketing strategies to grow audiences and drive conversions across all major platforms.',
     instructor: 'u4', instructorName: 'Emily Chen', instructorAvatar: avatars[3],
     thumbnail: thumbnails[12], price: 0, category: 'Marketing', level: 'Beginner', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'Platform Strategies', lessons: [{ title: 'Instagram Growth', dur: '16:00' }, { title: 'TikTok Marketing', dur: '14:00' }] },
-      { title: 'Content Creation', lessons: [{ title: 'Viral Content Formula', dur: '18:00' }] },
+    curriculum: makeCurriculum('c13', [
+      { title: 'Platform Strategies', lessons: [
+        { title: 'Instagram Growth', dur: '16:00', videoUrl: 'xBIVlM435Zg' },
+        { title: 'TikTok Marketing', dur: '14:00', videoUrl: 'qp0HIF3SfI4' }
+      ] },
+      { title: 'Content Creation', lessons: [
+        { title: 'Viral Content Formula', dur: '18:00', videoUrl: 'rrkrvAUbU9Y' }
+      ] },
     ]),
     enrollmentCount: 14200, rating: 4.3, reviewCount: 2800, reviews: [], isPublished: true,
     whatYouLearn: ['Platform-specific strategies', 'Content creation techniques', 'Audience growth tactics', 'Analytics and optimization'],
@@ -241,10 +326,16 @@ export const courses: Course[] = [
     id: 'c14', title: 'Flutter App Development', shortDescription: 'Build beautiful native apps with Flutter and Dart',
     description: 'Complete Flutter course for building stunning cross-platform mobile applications with Dart programming language.',
     instructor: 'u5', instructorName: 'Alex Kumar', instructorAvatar: avatars[4],
-    thumbnail: thumbnails[13], price: 3999, category: 'Mobile Development', level: 'Beginner', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'Dart Basics', lessons: [{ title: 'Dart Language Tour', dur: '18:00' }, { title: 'OOP in Dart', dur: '22:00' }] },
-      { title: 'Flutter Widgets', lessons: [{ title: 'Widget Tree', dur: '16:00' }, { title: 'Layout Widgets', dur: '20:00' }] },
+    thumbnail: thumbnails[13], price: 0, category: 'Mobile Development', level: 'Beginner', language: 'English',
+    curriculum: makeCurriculum('c14', [
+      { title: 'Dart Basics', lessons: [
+        { title: 'Dart Language Tour', dur: '18:00', videoUrl: '1ukSR1GRtMU' },
+        { title: 'OOP in Dart', dur: '22:00', videoUrl: 'VPvVD8t02U8' }
+      ] },
+      { title: 'Flutter Widgets', lessons: [
+        { title: 'Widget Tree', dur: '16:00', videoUrl: 'ZBCUegTZF7M' },
+        { title: 'Layout Widgets', dur: '20:00', videoUrl: 'bMknfKXIFA8' }
+      ] },
     ]),
     enrollmentCount: 8700, rating: 4.6, reviewCount: 1600, reviews: [], isPublished: true,
     whatYouLearn: ['Dart programming', 'Flutter widget system', 'State management', 'Publishing apps'],
@@ -255,10 +346,16 @@ export const courses: Course[] = [
     id: 'c15', title: 'DevOps Engineering Complete', shortDescription: 'Master CI/CD, Docker, Kubernetes, and cloud deployment',
     description: 'Comprehensive DevOps course covering containerization, orchestration, CI/CD pipelines, and cloud infrastructure.',
     instructor: 'u5', instructorName: 'Alex Kumar', instructorAvatar: avatars[4],
-    thumbnail: thumbnails[14], price: 5499, category: 'DevOps', level: 'Advanced', language: 'English',
-    curriculum: makeCurriculum([
-      { title: 'Docker', lessons: [{ title: 'Containers 101', dur: '14:00' }, { title: 'Docker Compose', dur: '18:00' }] },
-      { title: 'Kubernetes', lessons: [{ title: 'K8s Architecture', dur: '22:00' }, { title: 'Deployments & Services', dur: '20:00' }] },
+    thumbnail: thumbnails[14], price: 0, category: 'DevOps', level: 'Advanced', language: 'English',
+    curriculum: makeCurriculum('c15', [
+      { title: 'Docker', lessons: [
+        { title: 'Containers 101', dur: '14:00', videoUrl: 'pg19Z8LL06w' },
+        { title: 'Docker Compose', dur: '18:00', videoUrl: 'Gjnup-PuquQ' }
+      ] },
+      { title: 'Kubernetes', lessons: [
+        { title: 'K8s Architecture', dur: '22:00', videoUrl: 's_o8dwzRlu4' },
+        { title: 'Deployments & Services', dur: '20:00', videoUrl: '9OfL9H6AmhQ' }
+      ] },
     ]),
     enrollmentCount: 6100, rating: 4.8, reviewCount: 1100, reviews: [], isPublished: true,
     whatYouLearn: ['Docker containerization', 'Kubernetes orchestration', 'CI/CD pipelines', 'Cloud deployment (AWS/GCP)'],
@@ -293,12 +390,12 @@ courses.forEach(course => {
 });
 
 export const enrollments: Enrollment[] = [
-  { id: 'e1', studentId: 's1', courseId: 'c1', progress: 45, completedLessons: ['les-0-0', 'les-0-1', 'les-0-2', 'les-1-0'], enrolledAt: '2024-06-15', completedAt: null },
-  { id: 'e2', studentId: 's1', courseId: 'c3', progress: 20, completedLessons: ['les-0-0'], enrolledAt: '2024-08-01', completedAt: null },
+  { id: 'e1', studentId: 's1', courseId: 'c1', progress: 45, completedLessons: ['c1-les-0-0', 'c1-les-0-1', 'c1-les-0-2', 'c1-les-1-0'], enrolledAt: '2024-06-15', completedAt: null },
+  { id: 'e2', studentId: 's1', courseId: 'c3', progress: 20, completedLessons: ['c3-les-0-0'], enrolledAt: '2024-08-01', completedAt: null },
 ];
 
 export const testimonials = [
-  { id: 't1', name: 'Riya Mehta', role: 'Software Engineer at Google', avatar: avatars[1], comment: 'Academia transformed my career. The React course helped me land my dream job!', rating: 5 },
+  { id: 't1', name: 'Riya Mehta', role: 'Software Engineer at Google', avatar: avatars[1], comment: 'Teach-Tribe transformed my career. The React course helped me land my dream job!', rating: 5 },
   { id: 't2', name: 'Arjun Patel', role: 'Data Scientist at Microsoft', avatar: avatars[2], comment: 'The data science curriculum is world-class. Best investment I have made in my education.', rating: 5 },
   { id: 't3', name: 'Sneha Kumar', role: 'UX Designer at Apple', avatar: avatars[3], comment: 'The design courses are incredible. Practical projects and amazing instructor support.', rating: 5 },
 ];

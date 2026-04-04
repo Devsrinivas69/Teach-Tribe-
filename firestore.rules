@@ -1,0 +1,158 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function roleDoc() {
+      return get(/databases/$(database)/documents/user_roles/$(request.auth.uid));
+    }
+
+    function hasRole(r) {
+      return signedIn() && roleDoc().exists() && roleDoc().data.role == r;
+    }
+
+    function isMasterAdmin() {
+      return hasRole('master_admin');
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function isInstructor() {
+      return hasRole('instructor');
+    }
+
+    function membershipDoc(adminId) {
+      return get(/databases/$(database)/documents/user_admin_memberships/$(request.auth.uid + '_' + adminId));
+    }
+
+    function isMemberOf(adminId) {
+      return signedIn() && membershipDoc(adminId).exists();
+    }
+
+    function isAdminOf(adminId) {
+      return isMasterAdmin() || (
+        isMemberOf(adminId) &&
+        (membershipDoc(adminId).data.roleUnderAdmin == 'admin')
+      );
+    }
+
+    match /profiles/{userId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == userId;
+      allow update: if signedIn() && (request.auth.uid == userId || isMasterAdmin() || isAdmin());
+      allow delete: if isMasterAdmin();
+    }
+
+    match /user_roles/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || isMasterAdmin() || isAdmin());
+      allow create, update, delete: if isMasterAdmin();
+    }
+
+    match /admin_units/{adminId} {
+      allow read: if true;
+      allow create, update, delete: if isMasterAdmin();
+    }
+
+    match /user_admin_memberships/{membershipId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid ||
+        isMasterAdmin() ||
+        isAdminOf(resource.data.adminId)
+      );
+      allow create, update, delete: if isMasterAdmin() || (
+        isAdmin() && isAdminOf(request.resource.data.adminId)
+      );
+    }
+
+    match /courses/{courseId} {
+      allow read: if (
+        resource.data.isPublished == true ||
+        isMasterAdmin() ||
+        (signedIn() && resource.data.adminId is string && isMemberOf(resource.data.adminId))
+      );
+
+      allow create: if signedIn() && (
+        isMasterAdmin() ||
+        (
+          request.resource.data.adminId is string &&
+          isMemberOf(request.resource.data.adminId) &&
+          (
+            isInstructor() ||
+            isAdminOf(request.resource.data.adminId)
+          )
+        )
+      );
+
+      allow update, delete: if isMasterAdmin() || (
+        signedIn() &&
+        resource.data.adminId is string &&
+        isMemberOf(resource.data.adminId) &&
+        (
+          request.auth.uid == resource.data.instructor ||
+          isAdminOf(resource.data.adminId)
+        )
+      );
+    }
+
+    match /enrollments/{enrollmentId} {
+      allow read: if signedIn() && (
+        resource.data.studentId == request.auth.uid ||
+        isMasterAdmin() ||
+        (
+          resource.data.adminId is string &&
+          isAdminOf(resource.data.adminId)
+        )
+      );
+
+      allow create: if signedIn() && (
+        request.resource.data.studentId == request.auth.uid ||
+        isMasterAdmin() ||
+        (
+          request.resource.data.adminId is string &&
+          isAdminOf(request.resource.data.adminId)
+        )
+      );
+
+      allow update, delete: if signedIn() && (
+        resource.data.studentId == request.auth.uid ||
+        isMasterAdmin() ||
+        (
+          resource.data.adminId is string &&
+          isAdminOf(resource.data.adminId)
+        )
+      );
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create, update, delete: if signedIn() && (
+        request.auth.uid == request.resource.data.studentId ||
+        isMasterAdmin() ||
+        isAdmin()
+      );
+    }
+
+    match /admin_audit_logs/{logId} {
+      allow read: if isMasterAdmin();
+      allow create: if signedIn() && (isMasterAdmin() || isAdmin());
+      allow update, delete: if false;
+    }
+
+    // Password reset OTP/token storage — server-side only (Firebase Admin SDK)
+    match /password_reset_otps/{email} {
+      allow read, write: if false;
+    }
+
+    match /password_reset_tokens/{token} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
