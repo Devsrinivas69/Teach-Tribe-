@@ -5,6 +5,16 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isSelf(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isBootstrapMasterAdmin(userId) {
+      return isSelf(userId) &&
+        request.auth.token.email is string &&
+        request.auth.token.email == 'admintechtribe@gmail.com';
+    }
+
     function roleDoc() {
       return get(/databases/$(database)/documents/user_roles/$(request.auth.uid));
     }
@@ -42,14 +52,33 @@ service cloud.firestore {
 
     match /profiles/{userId} {
       allow read: if signedIn();
-      allow create: if signedIn() && request.auth.uid == userId;
+      allow create: if isSelf(userId) && request.resource.data.id == userId;
       allow update: if signedIn() && (request.auth.uid == userId || isMasterAdmin() || isAdmin());
       allow delete: if isMasterAdmin();
     }
 
     match /user_roles/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || isMasterAdmin() || isAdmin());
-      allow create, update, delete: if isMasterAdmin();
+      allow create: if isMasterAdmin() || (
+        isSelf(userId) &&
+        request.resource.data.user_id == userId &&
+        (
+          request.resource.data.role in ['student', 'instructor'] ||
+          (request.resource.data.role == 'master_admin' && isBootstrapMasterAdmin(userId))
+        )
+      );
+
+      allow update: if isMasterAdmin() || (
+        isSelf(userId) &&
+        request.resource.data.user_id == userId &&
+        request.resource.data.role == resource.data.role
+      ) || (
+        isBootstrapMasterAdmin(userId) &&
+        request.resource.data.user_id == userId &&
+        request.resource.data.role == 'master_admin'
+      );
+
+      allow delete: if isMasterAdmin();
     }
 
     match /admin_units/{adminId} {
@@ -63,8 +92,21 @@ service cloud.firestore {
         isMasterAdmin() ||
         isAdminOf(resource.data.adminId)
       );
-      allow create, update, delete: if isMasterAdmin() || (
+
+      allow create: if isMasterAdmin() || (
         isAdmin() && isAdminOf(request.resource.data.adminId)
+      ) || (
+        signedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.adminId is string &&
+        exists(/databases/$(database)/documents/admin_units/$(request.resource.data.adminId)) &&
+        membershipId == request.auth.uid + '_' + request.resource.data.adminId &&
+        request.resource.data.roleUnderAdmin in ['student', 'instructor'] &&
+        request.resource.data.isPrimary == true
+      );
+
+      allow update, delete: if isMasterAdmin() || (
+        isAdmin() && isAdminOf(resource.data.adminId)
       );
     }
 

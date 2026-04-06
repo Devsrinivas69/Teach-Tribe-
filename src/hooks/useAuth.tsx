@@ -108,6 +108,23 @@ const toErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
+const delay = (ms: number) => new Promise<void>((resolve) => {
+  setTimeout(resolve, ms);
+});
+
+const ensureAuthReadyForFirestore = async (uid: string) => {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const currentUser = auth.currentUser;
+    if (currentUser?.uid === uid) {
+      await currentUser.getIdToken();
+      return;
+    }
+    await delay(100);
+  }
+
+  throw new Error('Auth session is not ready yet. Please retry in a moment.');
+};
+
 const normalizeRoleForMembership = (appRole: AppRole): 'student' | 'instructor' | 'admin' => {
   if (appRole === 'instructor') return 'instructor';
   if (appRole === 'admin' || appRole === 'master_admin') return 'admin';
@@ -394,31 +411,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff`,
       });
 
-      await setDoc(doc(db, 'profiles', newUser.uid), {
+      await ensureAuthReadyForFirestore(newUser.uid);
+
+      const now = new Date().toISOString();
+      const batch = writeBatch(db);
+
+      batch.set(doc(db, 'profiles', newUser.uid), {
         id: newUser.uid,
         display_name: name,
         email,
         avatar_url: newUser.photoURL,
         bio: '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: now,
+        updated_at: now,
       });
 
-      await setDoc(doc(db, 'user_roles', newUser.uid), {
+      batch.set(doc(db, 'user_roles', newUser.uid), {
         user_id: newUser.uid,
         role: userRole,
-        created_at: new Date().toISOString(),
+        created_at: now,
       });
 
       if ((userRole === 'student' || userRole === 'instructor') && options?.adminId) {
         const membershipId = makeMembershipDocId(newUser.uid, options.adminId);
-        await setDoc(doc(db, 'user_admin_memberships', membershipId), {
+        batch.set(doc(db, 'user_admin_memberships', membershipId), {
           userId: newUser.uid,
           adminId: options.adminId,
           roleUnderAdmin: userRole,
           isPrimary: true,
-          createdAt: new Date().toISOString(),
+          createdAt: now,
         });
+      }
+
+      await batch.commit();
+
+      if ((userRole === 'student' || userRole === 'instructor') && options?.adminId) {
         setActiveAdminId(options.adminId);
       }
 
@@ -434,45 +461,72 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const result = await signInWithPopup(auth, googleProvider);
       const googleUser = result.user;
 
-      const profileSnap = await getDoc(doc(db, 'profiles', googleUser.uid));
+      await ensureAuthReadyForFirestore(googleUser.uid);
+
+      const profileRef = doc(db, 'profiles', googleUser.uid);
+      const roleRef = doc(db, 'user_roles', googleUser.uid);
+
+      let selectedAdmin = adminUnits.find((a) => a.status === 'active')?.id;
+      if (!selectedAdmin) {
+        try {
+          selectedAdmin = await ensureDefaultAdminUnit();
+        } catch {
+          selectedAdmin = null;
+        }
+      }
+
+      const membershipId = selectedAdmin ? makeMembershipDocId(googleUser.uid, selectedAdmin) : null;
+      const membershipRef = membershipId ? doc(db, 'user_admin_memberships', membershipId) : null;
+
+      const [profileSnap, roleSnap, membershipSnap] = await Promise.all([
+        getDoc(profileRef),
+        getDoc(roleRef),
+        membershipRef ? getDoc(membershipRef) : Promise.resolve(null),
+      ]);
+
+      const now = new Date().toISOString();
+      const batch = writeBatch(db);
+      let hasWrites = false;
+
       if (!profileSnap.exists()) {
-        await setDoc(doc(db, 'profiles', googleUser.uid), {
+        batch.set(profileRef, {
           id: googleUser.uid,
           display_name: googleUser.displayName || 'User',
           email: googleUser.email || '',
           avatar_url: googleUser.photoURL,
           bio: '',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          created_at: now,
+          updated_at: now,
         });
+        hasWrites = true;
       }
 
-      const roleSnap = await getDoc(doc(db, 'user_roles', googleUser.uid));
       if (!roleSnap.exists()) {
-        await setDoc(doc(db, 'user_roles', googleUser.uid), {
+        batch.set(roleRef, {
           user_id: googleUser.uid,
           role: 'student',
-          created_at: new Date().toISOString(),
+          created_at: now,
         });
+        hasWrites = true;
       }
 
-      let selectedAdmin = adminUnits.find((a) => a.status === 'active')?.id;
-      if (!selectedAdmin) {
-        selectedAdmin = await ensureDefaultAdminUnit();
+      if (selectedAdmin && membershipRef && !membershipSnap?.exists()) {
+        batch.set(membershipRef, {
+          userId: googleUser.uid,
+          adminId: selectedAdmin,
+          roleUnderAdmin: 'student',
+          isPrimary: true,
+          createdAt: now,
+        });
+        hasWrites = true;
+      }
+
+      if (hasWrites) {
+        await batch.commit();
       }
 
       if (selectedAdmin) {
-        const membershipId = makeMembershipDocId(googleUser.uid, selectedAdmin);
-        const membershipSnap = await getDoc(doc(db, 'user_admin_memberships', membershipId));
-        if (!membershipSnap.exists()) {
-          await setDoc(doc(db, 'user_admin_memberships', membershipId), {
-            userId: googleUser.uid,
-            adminId: selectedAdmin,
-            roleUnderAdmin: 'student',
-            isPrimary: true,
-            createdAt: new Date().toISOString(),
-          });
-        }
+        setActiveAdminId(selectedAdmin);
       }
 
       return { success: true, message: 'Google sign-in successful!' };
