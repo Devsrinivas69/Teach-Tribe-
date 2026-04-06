@@ -39,7 +39,7 @@ const SignupPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) { toast({ title: 'Password must be at least 6 characters', variant: 'destructive' }); return; }
+    if (password.length < 8) { toast({ title: 'Password must be at least 8 characters', variant: 'destructive' }); return; }
     if (effectiveRole !== 'master_admin' && !selectedAdminId) {
       toast({ title: 'Select an admin workspace', variant: 'destructive' });
       return;
@@ -153,7 +153,7 @@ const SignupPage = () => {
             <div className="relative mt-1">
               <input type={showPass ? 'text' : 'password'} required value={password} onChange={e => setPassword(e.target.value)}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-ring"
-                placeholder="Min 6 characters" />
+                placeholder="Min 8 chars + symbol" />
               <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                 {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>

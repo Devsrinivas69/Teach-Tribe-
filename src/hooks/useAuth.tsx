@@ -26,6 +26,11 @@ import {
 } from 'firebase/firestore';
 import { auth, db, firebaseConfig, googleProvider } from '@/lib/firebase';
 import { MASTER_ADMIN_EMAIL } from '@/lib/constants';
+import {
+  sanitizeDisplayNameForProfile,
+  sanitizeLoginInput,
+  sanitizeSignupInput,
+} from '@/lib/authInputSecurity';
 import type { AdminUnit, UserAdminMembership } from '@/types';
 
 export type AppRole = 'student' | 'instructor' | 'admin' | 'master_admin';
@@ -180,7 +185,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const newProfile: Profile = {
       id: uid,
-      display_name: currentUser.displayName || currentUser.email || 'User',
+      display_name: sanitizeDisplayNameForProfile(currentUser.displayName || 'User'),
       avatar_url: currentUser.photoURL || null,
       bio: '',
     };
@@ -372,7 +377,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string, options?: LoginOptions) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const sanitized = sanitizeLoginInput({ email, password });
+
+      await signInWithEmailAndPassword(auth, sanitized.email, sanitized.password);
       if (options?.preferredAdminId) {
         setTimeout(() => {
           setActiveAdminId(options.preferredAdminId || null);
@@ -392,7 +399,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     options?: SignupOptions
   ) => {
     try {
-      if (userRole === 'master_admin' && email.toLowerCase() !== MASTER_ADMIN_EMAIL.toLowerCase()) {
+      const sanitized = sanitizeSignupInput({ name, email, password });
+
+      if (userRole === 'master_admin' && sanitized.email !== MASTER_ADMIN_EMAIL.toLowerCase()) {
         return { success: false, message: 'Master admin registration is restricted.' };
       }
 
@@ -404,11 +413,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: false, message: 'Please select an admin workspace.' };
       }
 
-      const { user: newUser } = await createUserWithEmailAndPassword(auth, email, password);
+      const { user: newUser } = await createUserWithEmailAndPassword(auth, sanitized.email, sanitized.password);
 
       await updateFirebaseProfile(newUser, {
-        displayName: name,
-        photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff`,
+        displayName: sanitized.name,
+        photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(sanitized.name)}&background=6366f1&color=fff`,
       });
 
       await ensureAuthReadyForFirestore(newUser.uid);
@@ -418,8 +427,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       batch.set(doc(db, 'profiles', newUser.uid), {
         id: newUser.uid,
-        display_name: name,
-        email,
+        display_name: sanitized.name,
+        email: sanitized.email,
         avatar_url: newUser.photoURL,
         bio: '',
         created_at: now,
@@ -460,6 +469,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const googleUser = result.user;
+      const safeGoogleName = sanitizeDisplayNameForProfile(googleUser.displayName || 'User');
 
       await ensureAuthReadyForFirestore(googleUser.uid);
 
@@ -491,7 +501,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!profileSnap.exists()) {
         batch.set(profileRef, {
           id: googleUser.uid,
-          display_name: googleUser.displayName || 'User',
+          display_name: safeGoogleName,
           email: googleUser.email || '',
           avatar_url: googleUser.photoURL,
           bio: '',
@@ -706,20 +716,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: false, message: 'Only master admin can create managed users.' };
       }
 
-      if (password.length < 6) {
-        return { success: false, message: 'Password must be at least 6 characters.' };
+      if (password.length < 8) {
+        return { success: false, message: 'Password must be at least 8 characters.' };
       }
 
+      const sanitized = sanitizeSignupInput({ name, email, password });
+
       const provisioningAuth = getProvisioningAuth();
-      const credential = await createUserWithEmailAndPassword(provisioningAuth, email, password);
+      const credential = await createUserWithEmailAndPassword(
+        provisioningAuth,
+        sanitized.email,
+        sanitized.password
+      );
       const createdUser = credential.user;
 
       await signOut(provisioningAuth);
 
       await setDoc(doc(db, 'profiles', createdUser.uid), {
         id: createdUser.uid,
-        display_name: name,
-        email,
+        display_name: sanitized.name,
+        email: sanitized.email,
         avatar_url: null,
         bio: '',
         created_at: new Date().toISOString(),
@@ -743,7 +759,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       await writeAuditLog('managed_user_created', {
         userId: createdUser.uid,
-        email,
+        email: sanitized.email,
         adminId,
         roleUnderAdmin,
       });

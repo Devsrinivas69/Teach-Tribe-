@@ -15,6 +15,62 @@ service cloud.firestore {
         request.auth.token.email == 'admintechtribe@gmail.com';
     }
 
+    function hasOnlyProfileFields(data) {
+      return data.keys().hasOnly([
+        'id',
+        'display_name',
+        'email',
+        'avatar_url',
+        'bio',
+        'created_at',
+        'updated_at'
+      ]);
+    }
+
+    function validEmailField(email) {
+      return email is string &&
+        email.size() >= 6 &&
+        email.size() <= 254 &&
+        email.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
+    }
+
+    function validDisplayNameField(name) {
+      return name is string &&
+        name.size() >= 2 &&
+        name.size() <= 80 &&
+        name.matches("^[A-Za-z][A-Za-z .'-]{1,79}$");
+    }
+
+    function validAvatarField(url) {
+      return url == null || (url is string && url.size() <= 500);
+    }
+
+    function validBioField(bio) {
+      return bio is string && bio.size() <= 500;
+    }
+
+    function validIsoTimestamp(value) {
+      return value is string && value.size() >= 20 && value.size() <= 40;
+    }
+
+    function validProfileData(userId) {
+      return hasOnlyProfileFields(request.resource.data) &&
+        request.resource.data.id is string &&
+        request.resource.data.id == userId &&
+        validDisplayNameField(request.resource.data.display_name) &&
+        validEmailField(request.resource.data.email) &&
+        validAvatarField(request.resource.data.avatar_url) &&
+        validBioField(request.resource.data.bio) &&
+        validIsoTimestamp(request.resource.data.created_at) &&
+        validIsoTimestamp(request.resource.data.updated_at);
+    }
+
+    function preservesProfileIdentity(userId) {
+      return request.resource.data.id == userId &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.created_at == resource.data.created_at;
+    }
+
     function roleDocPath(uid) {
       return /databases/$(database)/documents/user_roles/$(uid);
     }
@@ -54,8 +110,11 @@ service cloud.firestore {
 
     match /profiles/{userId} {
       allow read: if signedIn();
-      allow create: if isSelf(userId) && request.resource.data.id == userId;
-      allow update: if signedIn() && (request.auth.uid == userId || isMasterAdmin() || isAdmin());
+      allow create: if isSelf(userId) && validProfileData(userId);
+      allow update: if signedIn() &&
+        (request.auth.uid == userId || isMasterAdmin() || isAdmin()) &&
+        validProfileData(userId) &&
+        preservesProfileIdentity(userId);
       allow delete: if isMasterAdmin();
     }
 
