@@ -15,12 +15,14 @@ service cloud.firestore {
         request.auth.token.email == 'admintechtribe@gmail.com';
     }
 
-    function roleDoc() {
-      return get(/databases/$(database)/documents/user_roles/$(request.auth.uid));
+    function roleDocPath(uid) {
+      return /databases/$(database)/documents/user_roles/$(uid);
     }
 
     function hasRole(r) {
-      return signedIn() && roleDoc().exists() && roleDoc().data.role == r;
+      return signedIn() &&
+        exists(roleDocPath(request.auth.uid)) &&
+        get(roleDocPath(request.auth.uid)).data.role == r;
     }
 
     function isMasterAdmin() {
@@ -35,18 +37,18 @@ service cloud.firestore {
       return hasRole('instructor');
     }
 
-    function membershipDoc(adminId) {
-      return get(/databases/$(database)/documents/user_admin_memberships/$(request.auth.uid + '_' + adminId));
+    function membershipDocPath(uid, adminId) {
+      return /databases/$(database)/documents/user_admin_memberships/$(uid + '_' + adminId);
     }
 
     function isMemberOf(adminId) {
-      return signedIn() && membershipDoc(adminId).exists();
+      return signedIn() && exists(membershipDocPath(request.auth.uid, adminId));
     }
 
     function isAdminOf(adminId) {
       return isMasterAdmin() || (
         isMemberOf(adminId) &&
-        (membershipDoc(adminId).data.roleUnderAdmin == 'admin')
+        (get(membershipDocPath(request.auth.uid, adminId)).data.roleUnderAdmin == 'admin')
       );
     }
 
