@@ -26,6 +26,7 @@ import Index from "@/pages/Index";
 import WorkspaceSwitchPage from "@/pages/WorkspaceSwitchPage";
 import { useEffect } from "react";
 import { useCourseStore } from "@/stores/courseStore";
+import { Analytics } from "@vercel/analytics/react";
 
 const queryClient = new QueryClient();
 
@@ -113,6 +114,7 @@ const App = () => (
           </ErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
+      <Analytics />
     </TooltipProvider>
   </QueryClientProvider>
 );
