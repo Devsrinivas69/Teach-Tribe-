@@ -64,12 +64,23 @@ const SignupPage = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    if (effectiveRole !== 'student' && effectiveRole !== 'instructor') {
+      toast({ title: 'Google sign-in is available only for Student or Instructor', variant: 'destructive' });
+      return;
+    }
+
+    if (!selectedAdminId) {
+      toast({ title: 'Select an admin workspace', variant: 'destructive' });
+      return;
+    }
+
     setLoading(true);
-    const result = await signInWithGoogle();
+    const result = await signInWithGoogle({ role: effectiveRole, adminId: selectedAdminId });
     setLoading(false);
     if (result.success) {
       toast({ title: result.message });
-      navigate('/dashboard');
+      if (effectiveRole === 'instructor') navigate('/dashboard/instructor');
+      else navigate('/dashboard/student');
     } else {
       toast({ title: 'Error', description: result.message, variant: 'destructive' });
     }
@@ -182,7 +193,7 @@ const SignupPage = () => {
           </svg>
           Continue with Google
         </Button>
-        <p className="mt-1 text-center text-[11px] text-muted-foreground">Google sign-in creates a Student account by default</p>
+        <p className="mt-1 text-center text-[11px] text-muted-foreground">Google sign-in creates a {effectiveRole === 'instructor' ? 'Instructor' : 'Student'} account for the selected admin workspace</p>
 
         <div className="mt-4 text-center text-sm text-muted-foreground">
           Already have an account? <Link to="/login" className="font-medium text-primary hover:underline">Log in</Link>

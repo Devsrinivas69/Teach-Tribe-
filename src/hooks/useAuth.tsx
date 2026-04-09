@@ -50,6 +50,11 @@ interface LoginOptions {
   preferredAdminId?: string;
 }
 
+interface GoogleSigninOptions {
+  role?: 'student' | 'instructor';
+  adminId?: string;
+}
+
 export interface ManagedWorkspaceUser {
   userId: string;
   email: string;
@@ -71,7 +76,7 @@ interface AuthContextType {
   activeAdmin: AdminUnit | null;
   login: (email: string, password: string, options?: LoginOptions) => Promise<{ success: boolean; message: string }>;
   signup: (name: string, email: string, password: string, role?: AppRole, options?: SignupOptions) => Promise<{ success: boolean; message: string }>;
-  signInWithGoogle: () => Promise<{ success: boolean; message: string }>;
+  signInWithGoogle: (options?: GoogleSigninOptions) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -465,8 +470,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (options?: GoogleSigninOptions) => {
     try {
+      const selectedRole = options?.role ?? 'student';
+      if (selectedRole !== 'student' && selectedRole !== 'instructor') {
+        return { success: false, message: 'Google sign-in supports only student or instructor role.' };
+      }
+
       const result = await signInWithPopup(auth, googleProvider);
       const googleUser = result.user;
       const safeGoogleName = sanitizeDisplayNameForProfile(googleUser.displayName || 'User');
@@ -476,7 +486,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const profileRef = doc(db, 'profiles', googleUser.uid);
       const roleRef = doc(db, 'user_roles', googleUser.uid);
 
-      let selectedAdmin = adminUnits.find((a) => a.status === 'active')?.id;
+      let selectedAdmin = options?.adminId || adminUnits.find((a) => a.status === 'active')?.id;
       if (!selectedAdmin) {
         try {
           selectedAdmin = await ensureDefaultAdminUnit();
@@ -493,6 +503,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         getDoc(roleRef),
         membershipRef ? getDoc(membershipRef) : Promise.resolve(null),
       ]);
+
+      const existingRole = roleSnap.exists() ? ((roleSnap.data().role as AppRole) || 'student') : null;
+      const roleForMembership = existingRole ? normalizeRoleForMembership(existingRole) : selectedRole;
 
       const now = new Date().toISOString();
       const batch = writeBatch(db);
@@ -514,7 +527,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!roleSnap.exists()) {
         batch.set(roleRef, {
           user_id: googleUser.uid,
-          role: 'student',
+          role: selectedRole,
           created_at: now,
         });
         hasWrites = true;
@@ -524,7 +537,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         batch.set(membershipRef, {
           userId: googleUser.uid,
           adminId: selectedAdmin,
-          roleUnderAdmin: 'student',
+          roleUnderAdmin: roleForMembership,
           isPrimary: true,
           createdAt: now,
         });
