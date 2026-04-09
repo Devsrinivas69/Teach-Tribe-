@@ -17,6 +17,7 @@ const router = express.Router();
 const MASTER_ADMIN_EMAIL = (process.env.MASTER_ADMIN_EMAIL || 'admintechtribe@gmail.com').trim().toLowerCase();
 const ADMIN_ACCESS_COLLECTION = 'admin_access_requests';
 const APP_NAME = process.env.PASSWORD_RESET_APP_NAME || 'TeachTribe';
+const isProd = process.env.NODE_ENV === 'production';
 
 const normalizeSpaces = (value) => value.replace(/\s+/g, ' ').trim();
 
@@ -148,10 +149,14 @@ const getAdminFirestoreOrError = (res) => {
   const auth = getFirebaseAdminAuth();
   if (!auth) {
     const details = getFirebaseAdminError();
+    if (details) {
+      console.error('[AdminAccess] Firebase Admin init error:', details);
+    }
+
     res.status(503).json({
       success: false,
       error: 'Admin onboarding service is not configured on server.',
-      details,
+      ...(isProd ? {} : { details }),
     });
     return null;
   }
@@ -242,10 +247,14 @@ const getAdminAuthOrError = (res) => {
   if (auth) return auth;
 
   const details = getFirebaseAdminError();
+  if (details) {
+    console.error('[Auth] Firebase Admin init error:', details);
+  }
+
   res.status(503).json({
     success: false,
     error: 'Password reset service is not configured on server.',
-    details,
+    ...(isProd ? {} : { details }),
   });
   return null;
 };
