@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { GraduationCap, Eye, EyeOff, BookOpen, Users } from 'lucide-react';
@@ -6,11 +6,21 @@ import { Button } from '@/components/ui/button';
 import { useAuth, type AppRole } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { MASTER_ADMIN_EMAIL } from '@/lib/constants';
+import { sanitizeEmailInput, sanitizeNameInput } from '@/lib/authInputSecurity';
 
 const allRoles: { value: AppRole; label: string; description: string; icon: React.ReactNode }[] = [
   { value: 'student', label: 'Student', description: 'Enroll in courses and learn', icon: <BookOpen className="h-5 w-5" /> },
   { value: 'instructor', label: 'Instructor', description: 'Create and manage courses', icon: <Users className="h-5 w-5" /> },
 ];
+
+interface ApiResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+const sanitizeWorkspaceName = (value: string) => value.normalize('NFKC').replace(/\s+/g, ' ').trim();
+const isWorkspaceNameValid = (value: string) => /^(?=.{3,80}$)[A-Za-z0-9][A-Za-z0-9 '&-]*$/.test(value);
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -23,6 +33,15 @@ const SignupPage = () => {
   const [selectedAdminId, setSelectedAdminId] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [adminApplicantName, setAdminApplicantName] = useState('');
+  const [adminApplicantEmail, setAdminApplicantEmail] = useState('');
+  const [adminWorkspaceName, setAdminWorkspaceName] = useState('');
+  const [adminApplyLoading, setAdminApplyLoading] = useState(false);
+
+  const API_BASE_URL = useMemo(
+    () => import.meta.env.VITE_AUTH_API_URL || 'http://localhost:3001/api/auth',
+    []
+  );
 
   const isMasterEmail = email.trim().toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
   const roles = isMasterEmail
@@ -83,6 +102,47 @@ const SignupPage = () => {
       else navigate('/dashboard/student');
     } else {
       toast({ title: 'Error', description: result.message, variant: 'destructive' });
+    }
+  };
+
+  const handleAdminApplication = async () => {
+    try {
+      const safeName = sanitizeNameInput(adminApplicantName);
+      const safeEmail = sanitizeEmailInput(adminApplicantEmail);
+      const safeWorkspaceName = sanitizeWorkspaceName(adminWorkspaceName);
+
+      if (!isWorkspaceNameValid(safeWorkspaceName)) {
+        throw new Error('Workspace name must be 3-80 characters and use letters, numbers, spaces, apostrophe, ampersand, or hyphen.');
+      }
+
+      setAdminApplyLoading(true);
+      const response = await fetch(`${API_BASE_URL}/admin-access/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: safeName,
+          email: safeEmail,
+          workspaceName: safeWorkspaceName,
+        }),
+      });
+
+      const data = (await response.json()) as ApiResponse;
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || data.message || 'Failed to submit admin application.');
+      }
+
+      toast({ title: 'Application submitted', description: data.message || 'Master admin has been notified.' });
+      setAdminWorkspaceName('');
+    } catch (error) {
+      toast({
+        title: 'Admin application failed',
+        description: error instanceof Error ? error.message : 'Something went wrong.',
+        variant: 'destructive',
+      });
+    } finally {
+      setAdminApplyLoading(false);
     }
   };
 
@@ -194,6 +254,47 @@ const SignupPage = () => {
           Continue with Google
         </Button>
         <p className="mt-1 text-center text-[11px] text-muted-foreground">Google sign-in creates a {effectiveRole === 'instructor' ? 'Instructor' : 'Student'} account for the selected admin workspace</p>
+
+        <div className="mt-5 rounded-xl border border-border p-4">
+          <h3 className="text-sm font-semibold">Apply As Admin</h3>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Request a new admin workspace. After approval by master admin, credentials are emailed to you.
+          </p>
+
+          <div className="mt-3 space-y-2.5">
+            <input
+              type="text"
+              value={adminApplicantName}
+              onChange={(e) => setAdminApplicantName(e.target.value)}
+              placeholder="Applicant full name"
+              className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+            <input
+              type="email"
+              value={adminApplicantEmail}
+              onChange={(e) => setAdminApplicantEmail(e.target.value)}
+              placeholder="Applicant email"
+              className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+            <input
+              type="text"
+              value={adminWorkspaceName}
+              onChange={(e) => setAdminWorkspaceName(e.target.value)}
+              placeholder="Preferred workspace name"
+              className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full"
+              disabled={adminApplyLoading || loading}
+              onClick={handleAdminApplication}
+            >
+              {adminApplyLoading ? 'Submitting request...' : 'Submit Admin Application'}
+            </Button>
+          </div>
+        </div>
 
         <div className="mt-4 text-center text-sm text-muted-foreground">
           Already have an account? <Link to="/login" className="font-medium text-primary hover:underline">Log in</Link>

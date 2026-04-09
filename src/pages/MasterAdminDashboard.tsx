@@ -17,6 +17,27 @@ interface AuditLogEntry {
   createdAt: string;
 }
 
+interface AdminAccessRequest {
+  id: string;
+  name: string;
+  email: string;
+  workspaceName: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requestedAt: string;
+  reviewedAt?: string | null;
+  reviewedByEmail?: string | null;
+  reviewNote?: string | null;
+  provisionedUserId?: string | null;
+  provisionedAdminId?: string | null;
+}
+
+interface AdminRequestsApiResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+  requests?: AdminAccessRequest[];
+}
+
 const MasterAdminDashboard = () => {
   const {
     user,
@@ -31,6 +52,7 @@ const MasterAdminDashboard = () => {
     removeUserFromAdmin,
     listUsersByAdmin,
     runDefaultAdminMigration,
+    refreshProfile,
   } = useAuth();
   const [adminName, setAdminName] = useState('');
   const [status, setStatus] = useState<'active' | 'upcoming'>('upcoming');
@@ -60,6 +82,14 @@ const MasterAdminDashboard = () => {
   const [workspaceFilter, setWorkspaceFilter] = useState('all');
   const [dateFromFilter, setDateFromFilter] = useState('');
   const [dateToFilter, setDateToFilter] = useState('');
+  const [adminAccessRequests, setAdminAccessRequests] = useState<AdminAccessRequest[]>([]);
+  const [adminRequestsLoading, setAdminRequestsLoading] = useState(false);
+  const [adminRequestBusyId, setAdminRequestBusyId] = useState<string | null>(null);
+
+  const authApiBaseUrl = useMemo(
+    () => import.meta.env.VITE_AUTH_API_URL || 'http://localhost:3001/api/auth',
+    []
+  );
 
   const stats = useMemo(() => ({
     total: adminUnits.length,
@@ -104,6 +134,45 @@ const MasterAdminDashboard = () => {
       setAuditLoading(false);
     }
   }, []);
+
+  const callAdminRequestsApi = useCallback(async (
+    path: string,
+    init?: RequestInit
+  ) => {
+    if (!user) {
+      throw new Error('User session not found. Please login again.');
+    }
+
+    const token = await user.getIdToken();
+    const response = await fetch(`${authApiBaseUrl}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...(init?.headers || {}),
+      },
+    });
+
+    const data = (await response.json()) as AdminRequestsApiResponse;
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || data.message || 'Request failed.');
+    }
+
+    return data;
+  }, [authApiBaseUrl, user]);
+
+  const loadPendingAdminRequests = useCallback(async () => {
+    setAdminRequestsLoading(true);
+    try {
+      const data = await callAdminRequestsApi('/admin-access/requests?status=pending', { method: 'GET' });
+      setAdminAccessRequests(data.requests || []);
+    } catch (error) {
+      setAdminAccessRequests([]);
+      setMessage(error instanceof Error ? error.message : 'Failed to load admin access requests.');
+    } finally {
+      setAdminRequestsLoading(false);
+    }
+  }, [callAdminRequestsApi]);
 
   const actionOptions = useMemo(() => {
     const values = Array.from(new Set(auditLogs.map((log) => log.action))).sort();
@@ -213,6 +282,10 @@ const MasterAdminDashboard = () => {
   useEffect(() => {
     loadAuditLogs();
   }, [loadAuditLogs]);
+
+  useEffect(() => {
+    loadPendingAdminRequests();
+  }, [loadPendingAdminRequests]);
 
   if (loading) {
     return (
@@ -344,6 +417,42 @@ const MasterAdminDashboard = () => {
     }
   };
 
+  const handleApproveAdminApplication = async (applicationId: string) => {
+    setAdminRequestBusyId(applicationId);
+    try {
+      const data = await callAdminRequestsApi('/admin-access/approve', {
+        method: 'POST',
+        body: JSON.stringify({ applicationId }),
+      });
+
+      setMessage(data.message || 'Admin application approved.');
+      await Promise.all([loadPendingAdminRequests(), refreshProfile(), loadAuditLogs()]);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to approve admin application.');
+    } finally {
+      setAdminRequestBusyId(null);
+    }
+  };
+
+  const handleRejectAdminApplication = async (applicationId: string) => {
+    const reviewNote = window.prompt('Optional rejection reason (shown to applicant):', '') || '';
+
+    setAdminRequestBusyId(applicationId);
+    try {
+      const data = await callAdminRequestsApi('/admin-access/reject', {
+        method: 'POST',
+        body: JSON.stringify({ applicationId, reviewNote }),
+      });
+
+      setMessage(data.message || 'Admin application rejected.');
+      await Promise.all([loadPendingAdminRequests(), loadAuditLogs()]);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to reject admin application.');
+    } finally {
+      setAdminRequestBusyId(null);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -389,6 +498,64 @@ const MasterAdminDashboard = () => {
       {message && (
         <p className="mt-4 text-sm text-muted-foreground">{message}</p>
       )}
+
+      <div className="mt-6 rounded-xl border border-border bg-card p-4 card-shadow">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="font-semibold">Admin Access Applications</h2>
+            <p className="text-sm text-muted-foreground">Review requests from users who want to become an admin and create a new workspace.</p>
+          </div>
+          <Button variant="outline" onClick={loadPendingAdminRequests} disabled={adminRequestsLoading || busy}>
+            {adminRequestsLoading ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </div>
+
+        <div className="space-y-3">
+          {adminRequestsLoading && (
+            <p className="text-sm text-muted-foreground">Loading admin applications...</p>
+          )}
+
+          {!adminRequestsLoading && adminAccessRequests.map((request) => {
+            const isRowBusy = adminRequestBusyId === request.id;
+
+            return (
+              <div key={request.id} className="rounded-lg border border-border p-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium">{request.name}</p>
+                    <p className="text-xs text-muted-foreground">{request.email}</p>
+                    <p className="mt-1 text-sm">Workspace: <span className="font-medium">{request.workspaceName}</span></p>
+                    <p className="text-xs text-muted-foreground">Requested: {request.requestedAt ? new Date(request.requestedAt).toLocaleString() : '-'}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      className="gap-1"
+                      disabled={busy || isRowBusy}
+                      onClick={() => handleApproveAdminApplication(request.id)}
+                    >
+                      <CheckCircle className="h-3.5 w-3.5" /> Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 text-destructive hover:text-destructive"
+                      disabled={busy || isRowBusy}
+                      onClick={() => handleRejectAdminApplication(request.id)}
+                    >
+                      <XCircle className="h-3.5 w-3.5" /> Reject
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {!adminRequestsLoading && adminAccessRequests.length === 0 && (
+            <p className="text-sm text-muted-foreground">No pending admin applications.</p>
+          )}
+        </div>
+      </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-4 card-shadow">
